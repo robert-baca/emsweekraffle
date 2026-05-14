@@ -4,3 +4,4 @@ database.db-shm
 database.db-wal
 .env
 *.log
+.vercel/
