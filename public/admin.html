@@ -322,9 +322,12 @@ header span { color: var(--color-accent); font-size: 0.8rem; font-weight: 600; t
   <!-- ── Crew Photos Tab ── -->
   <div id="tab-photos" class="tab-panel">
     <div class="panel">
-      <h3>Crew Photos</h3>
-      <p style="font-size:0.85rem;color:var(--color-text-muted);margin-bottom:1.25rem;">Photos submitted by crews for 2 bonus entries. Click any photo to view full size.</p>
-      <div id="photos-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:0.75rem;">
+      <div class="section-header">
+        <h3>Crew Photos</h3>
+        <button class="btn btn-primary btn-sm" id="btn-download-all" onclick="downloadAllPhotos()" style="display:none;">⬇ Download All</button>
+      </div>
+      <p style="font-size:0.85rem;color:var(--color-text-muted);margin-bottom:1.25rem;">Photos submitted by crews for 2 bonus entries.</p>
+      <div id="photos-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:1rem;">
         <div class="empty-state">Loading…</div>
       </div>
     </div>
@@ -890,30 +893,54 @@ document.getElementById('question-modal').addEventListener('click', e => {
 });
 
 // ── Crew Photos ────────────────────────────────────────────────────────────
+let cachedPhotos = [];
+
 async function loadPhotos() {
   const grid = document.getElementById('photos-grid');
   grid.innerHTML = '<div class="empty-state">Loading…</div>';
   try {
-    const photos = await api('GET', '/admin/photos');
-    if (!photos.length) {
+    cachedPhotos = await api('GET', '/admin/photos');
+    if (!cachedPhotos.length) {
       grid.innerHTML = '<div class="empty-state">No crew photos yet.</div>';
+      document.getElementById('btn-download-all').style.display = 'none';
       return;
     }
-    grid.innerHTML = photos.map(p => `
+    document.getElementById('btn-download-all').style.display = 'inline-flex';
+    grid.innerHTML = cachedPhotos.map((p, i) => `
       <div style="border-radius:var(--radius-sm);overflow:hidden;border:1px solid var(--color-border);background:var(--color-surface-alt);">
         <a href="${p.image_data}" target="_blank">
-          <img src="${p.image_data}" alt="Crew photo" style="width:100%;height:140px;object-fit:cover;display:block;" />
+          <img src="${p.image_data}" alt="Crew photo" style="width:100%;height:160px;object-fit:cover;display:block;cursor:pointer;" />
         </a>
-        <div style="padding:0.5rem 0.6rem;font-size:0.75rem;color:var(--color-text-muted);">
-          <strong style="color:var(--color-text)">${escHtml(p.first_name)} ${escHtml(p.last_name)}</strong><br>
-          ${escHtml(p.department)}<br>
-          ${fmtDate(p.submitted_at)}
+        <div style="padding:0.6rem 0.7rem;">
+          <div style="font-size:0.82rem;font-weight:700;color:var(--color-text);margin-bottom:0.15rem;">${escHtml(p.first_name)} ${escHtml(p.last_name)}</div>
+          <div style="font-size:0.75rem;color:var(--color-text-muted);margin-bottom:0.5rem;">${escHtml(p.department)} · ${fmtDate(p.submitted_at)}</div>
+          <button class="btn btn-secondary btn-sm btn-full" onclick="downloadPhoto(${i})">⬇ Download</button>
         </div>
       </div>
     `).join('');
   } catch (err) {
     grid.innerHTML = `<div class="empty-state">Failed to load photos: ${err.message}</div>`;
   }
+}
+
+function downloadPhoto(idx) {
+  const p = cachedPhotos[idx];
+  const a = document.createElement('a');
+  a.href = p.image_data;
+  a.download = `ems-crew-${p.first_name}-${p.last_name}.jpg`.replace(/\s+/g, '-').toLowerCase();
+  a.click();
+}
+
+async function downloadAllPhotos() {
+  const btn = document.getElementById('btn-download-all');
+  btn.innerHTML = '⬇ Downloading…';
+  btn.disabled = true;
+  for (let i = 0; i < cachedPhotos.length; i++) {
+    downloadPhoto(i);
+    await new Promise(r => setTimeout(r, 400)); // stagger to avoid browser blocking
+  }
+  btn.innerHTML = '⬇ Download All';
+  btn.disabled = false;
 }
 </script>
 </body>
