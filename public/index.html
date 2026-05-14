@@ -431,6 +431,9 @@ footer {
   </div>
   <div class="header-badge">May 17–23</div>
 </header>
+<div style="text-align:center;padding:0.45rem 1rem;font-size:0.72rem;letter-spacing:0.8px;color:var(--color-text-muted);border-bottom:1px solid var(--color-border);background:var(--color-surface);">
+  A Baylor Grapevine EMS Solution
+</div>
 
 <main>
   <div class="card">
@@ -559,14 +562,15 @@ footer {
     <!-- ── Screen: Cooldown ── -->
     <div id="screen-cooldown" class="screen">
       <div class="card-icon">⏳</div>
-      <h2>You've Already Entered Recently</h2>
-      <p class="subtitle">You can earn one entry per 15-minute window. Come back when the timer hits zero!</p>
+      <h2>You're Already Entered!</h2>
+      <p class="subtitle">You can earn one raffle entry every <strong>15 minutes</strong>. Come back when the timer hits zero for your next entry.</p>
       <div class="countdown-wrap">
         <div class="timer" id="countdown-display">15:00</div>
         <p>until your next entry is available</p>
       </div>
-      <div style="text-align:center;font-size:0.88rem;color:var(--color-text-muted);margin-top:1rem;">
-        Come back tomorrow for another entry!
+      <div style="background:var(--color-surface-alt);border:1px solid var(--color-border);border-radius:var(--radius);padding:0.85rem 1rem;margin-top:1rem;font-size:0.85rem;color:var(--color-text-muted);line-height:1.6;text-align:center;">
+        🎟 Keep scanning throughout the day for more entries!<br>
+        Each 15-minute visit adds another entry to the drawing.
       </div>
     </div>
 
@@ -698,14 +702,17 @@ async function submitRegister(evt) {
     });
 
     if (check.exists) {
-      // Name already in system — link to that profile
-      session.id = check.participant.id;
-      session.pin = pin;
-      session.firstName = check.participant.first_name;
-      // Try to update the PIN so they can log in with it going forward
-      // (silently — if it fails they just can't log in with this PIN)
-      await api('POST', '/entry', { id: session.id, pin }).catch(() => {});
-      showConfirm(check.participant.entries, false, null);
+      // Profile already exists — tell them clearly and offer to go to login
+      const matchMsg = check.match === 'name'
+        ? `A profile for <strong>${check.participant.first_name} ${check.participant.last_name}</strong> already exists.`
+        : 'That contact info is already linked to a profile.';
+      showError('reg-error', '');
+      const errEl = document.getElementById('reg-error');
+      errEl.innerHTML = `${matchMsg} Please log in with your PIN instead.
+        <br><br><button class="btn btn-primary" style="margin-top:0.25rem" onclick="showScreen('screen-login')">Log In with My PIN →</button>`;
+      errEl.style.display = 'block';
+      btn.innerHTML = 'Register &amp; Enter';
+      btn.disabled = false;
       return;
     }
 
