@@ -10,7 +10,8 @@ const COOLDOWN_MINUTES = 15;
 
 // ── Database setup ──────────────────────────────────────────────────────────
 
-const db = new DatabaseSync(path.join(__dirname, 'database.db'));
+const DB_PATH = process.env.DATABASE_PATH || path.join(__dirname, 'database.db');
+const db = new DatabaseSync(DB_PATH);
 
 db.exec("PRAGMA journal_mode = WAL");
 db.exec("PRAGMA foreign_keys = ON");
