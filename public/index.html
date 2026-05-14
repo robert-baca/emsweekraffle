@@ -572,13 +572,20 @@ footer {
         <div class="timer" id="countdown-display">15:00</div>
         <p>until your next entry is available</p>
       </div>
+      <!-- Photo CTA shown during cooldown if not yet submitted -->
+      <div id="cooldown-photo-cta" style="display:none;margin-top:1.25rem;background:var(--color-surface-alt);border:1px solid var(--color-border);border-radius:var(--radius);padding:1rem 1.25rem;text-align:center;">
+        <div style="font-size:1.4rem;margin-bottom:0.35rem">📸</div>
+        <div style="font-weight:700;font-size:0.95rem;margin-bottom:0.3rem;">While you wait — earn 2 more entries!</div>
+        <div style="font-size:0.82rem;color:var(--color-text-muted);margin-bottom:0.75rem;">Take a picture of you or your crew enjoying EMS Week and post it to earn 2 extra entries. One per profile.</div>
+        <button class="btn btn-primary btn-sm" onclick="showScreen('screen-photo')">Upload Crew Photo</button>
+      </div>
     </div>
 
     <!-- ── Screen: Photo Upload ── -->
     <div id="screen-photo" class="screen">
       <div class="card-icon">📸</div>
       <h2>Crew Photo = 2 Bonus Entries!</h2>
-      <p class="subtitle">Snap a crew photo at Baylor Grapevine during EMS Week and earn <strong>2 extra entries</strong> — one time per person.</p>
+      <p class="subtitle">Take a picture of you or your crew enjoying EMS Week and post it here to earn <strong>2 extra entries</strong>. One photo per profile.</p>
       <div id="photo-preview-wrap" style="display:none;margin-bottom:1rem;">
         <img id="photo-preview" src="" alt="Preview" style="width:100%;border-radius:var(--radius);border:2px solid var(--color-accent);" />
       </div>
@@ -609,7 +616,7 @@ footer {
       <div id="photo-cta" style="display:none;background:var(--color-surface-alt);border:1px solid var(--color-border);border-radius:var(--radius);padding:1rem 1.25rem;margin-bottom:1rem;text-align:center;">
         <div style="font-size:1.4rem;margin-bottom:0.35rem">📸</div>
         <div style="font-weight:700;font-size:0.95rem;margin-bottom:0.3rem;">Earn 2 More Entries!</div>
-        <div style="font-size:0.82rem;color:var(--color-text-muted);margin-bottom:0.75rem;">Take a crew photo at Baylor Grapevine for 2 bonus entries.</div>
+        <div style="font-size:0.82rem;color:var(--color-text-muted);margin-bottom:0.75rem;">Take a picture of you or your crew enjoying EMS Week and post it for 2 extra entries. One per profile.</div>
         <button class="btn btn-primary btn-sm" onclick="showScreen('screen-photo')">Upload Crew Photo</button>
       </div>
       <div style="text-align:center;font-size:0.88rem;color:var(--color-text-muted);line-height:1.7;">
@@ -898,6 +905,8 @@ async function skipSurvey() {
 // ── Cooldown ───────────────────────────────────────────────────────────────
 function startCooldown(remainingMs) {
   showScreen('screen-cooldown');
+  document.getElementById('cooldown-photo-cta').style.display =
+    session.photoSubmitted ? 'none' : 'block';
   if (countdownInterval) clearInterval(countdownInterval);
   let remaining = Math.ceil(remainingMs / 1000);
 
