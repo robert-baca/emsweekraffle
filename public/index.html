@@ -1,0 +1,955 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>EMS Week 2026 — Raffle</title>
+<style>
+/* ============================================================
+   THEME — edit these to match your hospital branding
+   ============================================================ */
+:root {
+  --color-bg:           #0d1b2a;       /* page background */
+  --color-surface:      #162032;       /* card/panel background */
+  --color-surface-alt:  #1e2f45;       /* alternate surface / input bg */
+  --color-border:       #2a3f5a;       /* borders and dividers */
+  --color-accent:       #e63946;       /* primary red accent */
+  --color-accent-hover: #c1121f;       /* red on hover */
+  --color-gold:         #ffd700;       /* star / highlight color */
+  --color-text:         #e8eef4;       /* primary text */
+  --color-text-muted:   #7a9ab8;       /* secondary / muted text */
+  --color-success:      #2ecc71;       /* success green */
+  --color-warning:      #f39c12;       /* warning amber */
+  --font-main:          'Segoe UI', system-ui, sans-serif;
+  --radius:             10px;
+  --radius-sm:          6px;
+  --shadow:             0 4px 24px rgba(0,0,0,0.4);
+}
+/* ============================================================ */
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: var(--font-main);
+  background: var(--color-bg);
+  color: var(--color-text);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ── Header ── */
+header {
+  background: linear-gradient(135deg, #0a111c 0%, #162032 60%, #1a0a0a 100%);
+  border-bottom: 3px solid var(--color-accent);
+  padding: 1.25rem 2rem;
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+  box-shadow: var(--shadow);
+}
+.header-star {
+  font-size: 2.4rem;
+  filter: drop-shadow(0 0 8px var(--color-gold));
+}
+.header-title { line-height: 1.2; }
+.header-title h1 {
+  font-size: 1.5rem;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  color: var(--color-text);
+}
+.header-title p {
+  font-size: 0.82rem;
+  color: var(--color-accent);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+}
+.header-badge {
+  margin-left: auto;
+  background: var(--color-accent);
+  color: #fff;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  padding: 0.3rem 0.75rem;
+  border-radius: 20px;
+}
+
+/* ── Layout ── */
+main {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  padding: 2rem 1rem 3rem;
+}
+.card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  padding: 2rem 2.25rem;
+  width: 100%;
+  max-width: 520px;
+  box-shadow: var(--shadow);
+}
+.card-icon {
+  text-align: center;
+  font-size: 2.8rem;
+  margin-bottom: 0.5rem;
+}
+.card h2 {
+  text-align: center;
+  font-size: 1.35rem;
+  font-weight: 700;
+  margin-bottom: 0.35rem;
+}
+.card .subtitle {
+  text-align: center;
+  color: var(--color-text-muted);
+  font-size: 0.9rem;
+  margin-bottom: 1.75rem;
+  line-height: 1.5;
+}
+
+/* ── Forms ── */
+.field { margin-bottom: 1.1rem; }
+.field label {
+  display: block;
+  font-size: 0.82rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  color: var(--color-text-muted);
+  margin-bottom: 0.4rem;
+}
+.field input,
+.field select,
+.field textarea {
+  width: 100%;
+  background: var(--color-surface-alt);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  color: var(--color-text);
+  font-family: var(--font-main);
+  font-size: 0.97rem;
+  padding: 0.65rem 0.9rem;
+  transition: border-color 0.2s;
+  outline: none;
+}
+.field input:focus,
+.field select:focus,
+.field textarea:focus {
+  border-color: var(--color-accent);
+}
+.field select option { background: var(--color-surface); }
+.field textarea { resize: vertical; min-height: 80px; }
+.field-hint {
+  font-size: 0.78rem;
+  color: var(--color-text-muted);
+  margin-top: 0.3rem;
+}
+.field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+
+/* PIN dots */
+.pin-input-wrap {
+  display: flex;
+  gap: 0.6rem;
+}
+.pin-input-wrap input {
+  width: 3rem;
+  text-align: center;
+  font-size: 1.4rem;
+  font-weight: 700;
+  letter-spacing: 2px;
+  padding: 0.5rem;
+}
+
+/* ── Buttons ── */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  font-family: var(--font-main);
+  font-size: 0.97rem;
+  font-weight: 700;
+  border: none;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  padding: 0.75rem 1.4rem;
+  transition: background 0.18s, transform 0.12s;
+}
+.btn:active { transform: scale(0.97); }
+.btn-primary {
+  background: var(--color-accent);
+  color: #fff;
+  width: 100%;
+  padding: 0.85rem;
+  font-size: 1.05rem;
+}
+.btn-primary:hover { background: var(--color-accent-hover); }
+.btn-secondary {
+  background: var(--color-surface-alt);
+  color: var(--color-text);
+  border: 1px solid var(--color-border);
+}
+.btn-secondary:hover { background: var(--color-border); }
+.btn-ghost {
+  background: transparent;
+  color: var(--color-text-muted);
+  text-decoration: underline;
+  font-weight: 400;
+  font-size: 0.88rem;
+}
+.btn-ghost:hover { color: var(--color-text); }
+.btn-sm { font-size: 0.82rem; padding: 0.45rem 0.85rem; }
+.btn-full { width: 100%; }
+
+/* ── Alerts / notice ── */
+.alert {
+  padding: 0.75rem 1rem;
+  border-radius: var(--radius-sm);
+  font-size: 0.9rem;
+  margin-bottom: 1rem;
+  border: 1px solid transparent;
+}
+.alert-error { background: rgba(230,57,70,0.12); border-color: rgba(230,57,70,0.35); color: #ff8080; }
+.alert-success { background: rgba(46,204,113,0.1); border-color: rgba(46,204,113,0.3); color: var(--color-success); }
+.alert-info { background: rgba(30,90,160,0.15); border-color: var(--color-border); color: var(--color-text-muted); }
+
+/* ── Entry confirmation ── */
+.entry-count {
+  text-align: center;
+  margin: 1.5rem 0;
+}
+.entry-count .big-num {
+  font-size: 4rem;
+  font-weight: 900;
+  color: var(--color-accent);
+  line-height: 1;
+  text-shadow: 0 0 30px rgba(230,57,70,0.4);
+}
+.entry-count .label {
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  color: var(--color-text-muted);
+  margin-top: 0.25rem;
+}
+
+/* ── Countdown timer ── */
+.countdown-wrap {
+  text-align: center;
+  padding: 1.5rem;
+  background: var(--color-surface-alt);
+  border-radius: var(--radius);
+  border: 1px solid var(--color-border);
+  margin: 1rem 0;
+}
+.countdown-wrap .timer {
+  font-size: 2.8rem;
+  font-weight: 900;
+  color: var(--color-warning);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 2px;
+}
+.countdown-wrap p { font-size: 0.88rem; color: var(--color-text-muted); margin-top: 0.4rem; }
+
+/* ── Survey ── */
+.survey-question { margin-bottom: 1.75rem; }
+.survey-question .q-text {
+  font-weight: 600;
+  margin-bottom: 0.75rem;
+  line-height: 1.4;
+}
+.scale-row {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+.scale-row label {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.3rem;
+  cursor: pointer;
+  flex: 1;
+}
+.scale-row input[type=radio] { display: none; }
+.scale-btn {
+  width: 100%;
+  padding: 0.5rem;
+  text-align: center;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-border);
+  background: var(--color-surface-alt);
+  color: var(--color-text-muted);
+  font-weight: 700;
+  font-size: 1rem;
+  transition: all 0.15s;
+  cursor: pointer;
+}
+.scale-row input[type=radio]:checked + .scale-btn {
+  background: var(--color-accent);
+  border-color: var(--color-accent);
+  color: #fff;
+}
+.scale-labels {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.7rem;
+  color: var(--color-text-muted);
+  margin-top: 0.3rem;
+}
+.mc-option { margin-bottom: 0.45rem; }
+.mc-option label {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  cursor: pointer;
+  padding: 0.5rem 0.75rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-border);
+  background: var(--color-surface-alt);
+  transition: border-color 0.15s;
+  font-size: 0.92rem;
+}
+.mc-option input[type=radio] { accent-color: var(--color-accent); }
+.mc-option label:has(input:checked) {
+  border-color: var(--color-accent);
+  background: rgba(230,57,70,0.08);
+}
+.survey-progress {
+  text-align: right;
+  font-size: 0.78rem;
+  color: var(--color-text-muted);
+  margin-bottom: 1.5rem;
+}
+
+/* ── Divider ── */
+.divider {
+  border: none;
+  border-top: 1px solid var(--color-border);
+  margin: 1.5rem 0;
+}
+
+/* ── Steps indicator ── */
+.steps {
+  display: flex;
+  justify-content: center;
+  gap: 0.5rem;
+  margin-bottom: 1.5rem;
+}
+.step-dot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  background: var(--color-border);
+  transition: background 0.2s;
+}
+.step-dot.active { background: var(--color-accent); }
+.step-dot.done { background: var(--color-success); }
+
+/* ── Admin button in footer ── */
+footer {
+  text-align: center;
+  padding: 1rem;
+}
+.admin-trigger {
+  background: none;
+  border: none;
+  color: var(--color-border);
+  font-family: var(--font-main);
+  font-size: 0.72rem;
+  letter-spacing: 0.5px;
+  cursor: pointer;
+  padding: 0.4rem 0.8rem;
+  border-radius: 20px;
+  transition: color 0.2s, background 0.2s;
+}
+.admin-trigger:hover {
+  color: var(--color-text-muted);
+  background: rgba(255,255,255,0.04);
+}
+
+/* ── Admin PIN overlay ── */
+.admin-overlay {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.7);
+  display: flex; align-items: center; justify-content: center;
+  z-index: 200;
+  padding: 1rem;
+}
+.admin-overlay.hidden { display: none; }
+.admin-pin-card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  padding: 2rem 2.25rem;
+  width: 100%; max-width: 320px;
+  box-shadow: var(--shadow);
+  text-align: center;
+}
+.admin-pin-card h3 { font-size: 1rem; font-weight: 700; margin-bottom: 0.35rem; }
+.admin-pin-card p { font-size: 0.82rem; color: var(--color-text-muted); margin-bottom: 1.25rem; }
+.admin-pin-error { font-size: 0.82rem; color: #ff8080; margin: 0.5rem 0 0; min-height: 1.1rem; }
+
+/* ── Screens ── */
+.screen { display: none; }
+.screen.active { display: block; }
+
+/* ── Spinner ── */
+.spinner {
+  display: inline-block;
+  width: 18px; height: 18px;
+  border: 2px solid rgba(255,255,255,0.3);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+  vertical-align: middle;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ── Responsive ── */
+@media (max-width: 480px) {
+  .card { padding: 1.5rem 1.25rem; }
+  header { padding: 1rem; }
+  .header-title h1 { font-size: 1.2rem; }
+  .header-badge { display: none; }
+  .field-row { grid-template-columns: 1fr; gap: 0; }
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-star">⭐</div>
+  <div class="header-title">
+    <h1>EMS Week Raffle</h1>
+    <p>National EMS Week 2026</p>
+  </div>
+  <div class="header-badge">May 17–23</div>
+</header>
+
+<main>
+  <div class="card">
+
+    <!-- ── Screen: Loading ── -->
+    <div id="screen-loading" class="screen active">
+      <div class="card-icon">🚑</div>
+      <h2>Loading…</h2>
+    </div>
+
+    <!-- ── Screen: Choose (new / returning) ── -->
+    <div id="screen-choose" class="screen">
+      <div class="card-icon">🚑</div>
+      <h2>EMS Week 2026 Raffle</h2>
+      <p class="subtitle">Enter for a chance to win! Each visit earns you an entry.<br>Complete a quick survey on your first visit for 5 bonus entries.</p>
+      <hr class="divider">
+      <button class="btn btn-primary" onclick="showScreen('screen-register')">I'm New — Register</button>
+      <br><br>
+      <button class="btn btn-secondary btn-full" onclick="showScreen('screen-login')">I've Been Here Before — Log In</button>
+    </div>
+
+    <!-- ── Screen: Register ── -->
+    <div id="screen-register" class="screen">
+      <div class="card-icon">📋</div>
+      <h2>Create Your Profile</h2>
+      <p class="subtitle">Fill out your info once — then log in with your PIN on any return visit.</p>
+      <div id="reg-error" class="alert alert-error" style="display:none"></div>
+      <form id="form-register" onsubmit="submitRegister(event)">
+        <div class="field-row">
+          <div class="field">
+            <label>First Name</label>
+            <input type="text" id="reg-first" required autocomplete="given-name" />
+          </div>
+          <div class="field">
+            <label>Last Name</label>
+            <input type="text" id="reg-last" required autocomplete="family-name" />
+          </div>
+        </div>
+        <div class="field">
+          <label>Phone or Email</label>
+          <input type="text" id="reg-contact" required autocomplete="email" placeholder="cell number or email address" />
+          <div class="field-hint">Used to log in — never shared or contacted.</div>
+        </div>
+        <div class="field">
+          <label>Department / Agency</label>
+          <input type="text" id="reg-dept" required placeholder="e.g. Station 7, County EMS" />
+        </div>
+        <div class="field">
+          <label>Role</label>
+          <select id="reg-role" required>
+            <option value="" disabled selected>Select your role…</option>
+            <option>EMT-Basic</option>
+            <option>AEMT</option>
+            <option>Paramedic</option>
+            <option>First Responder/Fire</option>
+            <option>Dispatcher/Comm</option>
+            <option>Supervisor/Officer</option>
+            <option>Other EMS Staff</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Create a 4-Digit PIN</label>
+          <div class="pin-input-wrap" id="pin-create-wrap">
+            <input type="password" inputmode="numeric" maxlength="1" class="pin-digit" />
+            <input type="password" inputmode="numeric" maxlength="1" class="pin-digit" />
+            <input type="password" inputmode="numeric" maxlength="1" class="pin-digit" />
+            <input type="password" inputmode="numeric" maxlength="1" class="pin-digit" />
+          </div>
+          <div class="field-hint">Remember this — it's your key for return visits.</div>
+        </div>
+        <button type="submit" class="btn btn-primary" id="btn-register">Register &amp; Enter</button>
+      </form>
+      <br>
+      <button class="btn btn-ghost btn-full" onclick="showScreen('screen-choose')">← Back</button>
+    </div>
+
+    <!-- ── Screen: Login ── -->
+    <div id="screen-login" class="screen">
+      <div class="card-icon">🔑</div>
+      <h2>Welcome Back!</h2>
+      <p class="subtitle">Enter your contact info and PIN to log in and record your visit.</p>
+      <div id="login-error" class="alert alert-error" style="display:none"></div>
+      <form id="form-login" onsubmit="submitLogin(event)">
+        <div class="field">
+          <label>Phone or Email</label>
+          <input type="text" id="login-contact" required autocomplete="email" placeholder="the one you registered with" />
+        </div>
+        <div class="field">
+          <label>Your 4-Digit PIN</label>
+          <div class="pin-input-wrap" id="pin-login-wrap">
+            <input type="password" inputmode="numeric" maxlength="1" class="pin-digit" />
+            <input type="password" inputmode="numeric" maxlength="1" class="pin-digit" />
+            <input type="password" inputmode="numeric" maxlength="1" class="pin-digit" />
+            <input type="password" inputmode="numeric" maxlength="1" class="pin-digit" />
+          </div>
+        </div>
+        <button type="submit" class="btn btn-primary" id="btn-login">Log In &amp; Enter</button>
+      </form>
+      <br>
+      <button class="btn btn-ghost btn-full" onclick="showScreen('screen-choose')">← Back</button>
+    </div>
+
+    <!-- ── Screen: Survey Offer ── -->
+    <div id="screen-survey-offer" class="screen">
+      <div class="card-icon">🎁</div>
+      <h2>Earn 5 Bonus Entries!</h2>
+      <p class="subtitle">Take a quick 5-question survey about your experience working with this hospital and we'll add <strong>5 bonus entries</strong> to your total — giving you <strong>6 entries</strong> for your first visit.</p>
+      <div style="background:var(--color-surface-alt);border:1px solid var(--color-border);border-radius:var(--radius);padding:1rem 1.25rem;margin-bottom:1.5rem;">
+        <div style="display:flex;align-items:center;gap:0.6rem;font-weight:700;color:var(--color-gold);margin-bottom:0.3rem;">⭐ Your Feedback Matters</div>
+        <div style="font-size:0.88rem;color:var(--color-text-muted);line-height:1.5;">Your answers are anonymous and help us improve EMS-to-hospital coordination. Takes about 2 minutes.</div>
+      </div>
+      <button class="btn btn-primary" onclick="startSurvey()">Yes, I'll Take the Survey (+5 entries)</button>
+      <br><br>
+      <button class="btn btn-secondary btn-full" onclick="skipSurvey()">No Thanks, Skip the Survey</button>
+    </div>
+
+    <!-- ── Screen: Survey ── -->
+    <div id="screen-survey" class="screen">
+      <div class="card-icon">📝</div>
+      <h2>Quick Survey</h2>
+      <div id="survey-progress" class="survey-progress"></div>
+      <div id="survey-questions"></div>
+      <button class="btn btn-primary" id="btn-submit-survey" onclick="submitSurvey()">Submit &amp; Claim 5 Bonus Entries</button>
+    </div>
+
+    <!-- ── Screen: Cooldown ── -->
+    <div id="screen-cooldown" class="screen">
+      <div class="card-icon">⏳</div>
+      <h2>You've Already Entered Recently</h2>
+      <p class="subtitle">You can earn one entry per 15-minute window. Come back when the timer hits zero!</p>
+      <div class="countdown-wrap">
+        <div class="timer" id="countdown-display">15:00</div>
+        <p>until your next entry is available</p>
+      </div>
+      <div style="text-align:center;font-size:0.88rem;color:var(--color-text-muted);margin-top:1rem;">
+        Come back tomorrow for another entry!
+      </div>
+    </div>
+
+    <!-- ── Screen: Confirmation ── -->
+    <div id="screen-confirm" class="screen">
+      <div class="card-icon">🎉</div>
+      <h2 id="confirm-title">Entry Recorded!</h2>
+      <p class="subtitle" id="confirm-subtitle"></p>
+      <div class="entry-count">
+        <div class="big-num" id="confirm-count">1</div>
+        <div class="label">Total Entries This Week</div>
+      </div>
+      <div id="confirm-bonus" class="alert alert-success" style="display:none"></div>
+      <hr class="divider">
+      <div style="text-align:center;font-size:0.88rem;color:var(--color-text-muted);line-height:1.7;">
+        Come back tomorrow for another entry!<br>
+        Drawing takes place at the end of EMS Week.
+      </div>
+    </div>
+
+  </div><!-- /.card -->
+</main>
+
+<footer>
+  <button class="admin-trigger" onclick="openAdminOverlay()">⚙ Staff Access</button>
+</footer>
+
+<!-- Admin PIN overlay -->
+<div id="admin-overlay" class="admin-overlay hidden" onclick="if(event.target===this)closeAdminOverlay()">
+  <div class="admin-pin-card">
+    <div style="font-size:1.8rem;margin-bottom:0.5rem">🔒</div>
+    <h3>Staff Access</h3>
+    <p>Enter your 4-digit admin PIN</p>
+    <div class="pin-input-wrap" id="pin-admin-wrap" style="justify-content:center">
+      <input type="password" inputmode="numeric" maxlength="1" class="pin-digit" id="admin-pin-0" />
+      <input type="password" inputmode="numeric" maxlength="1" class="pin-digit" id="admin-pin-1" />
+      <input type="password" inputmode="numeric" maxlength="1" class="pin-digit" id="admin-pin-2" />
+      <input type="password" inputmode="numeric" maxlength="1" class="pin-digit" id="admin-pin-3" />
+    </div>
+    <div class="admin-pin-error" id="admin-pin-error"></div>
+    <br>
+    <button class="btn btn-ghost" onclick="closeAdminOverlay()">Cancel</button>
+  </div>
+</div>
+
+<script>
+// ── State ──────────────────────────────────────────────────────────────────
+let session = { id: null, pin: null, firstName: null };
+let surveyQuestions = [];
+let countdownInterval = null;
+
+// ── Helpers ────────────────────────────────────────────────────────────────
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+function showError(elId, msg) {
+  const el = document.getElementById(elId);
+  el.textContent = msg;
+  el.style.display = 'block';
+}
+
+function hideError(elId) {
+  document.getElementById(elId).style.display = 'none';
+}
+
+async function api(method, path, body) {
+  const opts = {
+    method,
+    headers: { 'Content-Type': 'application/json' },
+    body: body ? JSON.stringify(body) : undefined
+  };
+  const res = await fetch('/api' + path, opts);
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw Object.assign(new Error(data.error || 'Request failed'), { status: res.status, data });
+  return data;
+}
+
+function getPin(wrapId) {
+  return Array.from(document.querySelectorAll(`#${wrapId} .pin-digit`))
+    .map(i => i.value).join('');
+}
+
+// ── PIN input: auto-advance ────────────────────────────────────────────────
+document.addEventListener('input', e => {
+  if (!e.target.classList.contains('pin-digit')) return;
+  const digits = Array.from(e.target.closest('.pin-input-wrap').querySelectorAll('.pin-digit'));
+  const idx = digits.indexOf(e.target);
+  if (e.target.value && idx < digits.length - 1) digits[idx + 1].focus();
+});
+document.addEventListener('keydown', e => {
+  if (!e.target.classList.contains('pin-digit')) return;
+  if (e.key === 'Backspace' && !e.target.value) {
+    const digits = Array.from(e.target.closest('.pin-input-wrap').querySelectorAll('.pin-digit'));
+    const idx = digits.indexOf(e.target);
+    if (idx > 0) { digits[idx - 1].value = ''; digits[idx - 1].focus(); }
+  }
+});
+
+// ── Registration ──────────────────────────────────────────────────────────
+async function submitRegister(evt) {
+  evt.preventDefault();
+  hideError('reg-error');
+  const pin = getPin('pin-create-wrap');
+  if (pin.length !== 4 || !/^\d{4}$/.test(pin)) {
+    showError('reg-error', 'Please enter a complete 4-digit PIN.');
+    return;
+  }
+  const btn = document.getElementById('btn-register');
+  btn.innerHTML = '<span class="spinner"></span> Registering…';
+  btn.disabled = true;
+
+  const body = {
+    first_name: document.getElementById('reg-first').value.trim(),
+    last_name: document.getElementById('reg-last').value.trim(),
+    contact: document.getElementById('reg-contact').value.trim(),
+    department: document.getElementById('reg-dept').value.trim(),
+    role: document.getElementById('reg-role').value,
+    pin
+  };
+
+  try {
+    // Check for existing name match first
+    const check = await api('POST', '/check', {
+      first_name: body.first_name,
+      last_name: body.last_name,
+      contact: body.contact
+    });
+
+    if (check.exists) {
+      // Name already in system — link to that profile
+      session.id = check.participant.id;
+      session.pin = pin;
+      session.firstName = check.participant.first_name;
+      // Try to update the PIN so they can log in with it going forward
+      // (silently — if it fails they just can't log in with this PIN)
+      await api('POST', '/entry', { id: session.id, pin }).catch(() => {});
+      showConfirm(check.participant.entries, false, null);
+      return;
+    }
+
+    const data = await api('POST', '/register', body);
+    session.id = data.id;
+    session.pin = pin;
+    session.firstName = body.first_name;
+    // Show survey offer
+    showScreen('screen-survey-offer');
+  } catch (err) {
+    if (err.status === 409) {
+      showError('reg-error', 'It looks like you\'re already registered. Please use the "Log In" option.');
+    } else {
+      showError('reg-error', err.message || 'Registration failed. Please try again.');
+    }
+    btn.innerHTML = 'Register &amp; Enter';
+    btn.disabled = false;
+  }
+}
+
+// ── Login ─────────────────────────────────────────────────────────────────
+async function submitLogin(evt) {
+  evt.preventDefault();
+  hideError('login-error');
+  const pin = getPin('pin-login-wrap');
+  if (pin.length !== 4) {
+    showError('login-error', 'Please enter your 4-digit PIN.');
+    return;
+  }
+  const btn = document.getElementById('btn-login');
+  btn.innerHTML = '<span class="spinner"></span> Logging in…';
+  btn.disabled = true;
+
+  try {
+    const contact = document.getElementById('login-contact').value.trim();
+    const loginData = await api('POST', '/login', { contact, pin });
+    session.id = loginData.id;
+    session.pin = pin;
+    session.firstName = loginData.first_name;
+
+    if (loginData.cooldown_remaining_ms > 0) {
+      startCooldown(loginData.cooldown_remaining_ms);
+      return;
+    }
+
+    // Record entry
+    const entryData = await api('POST', '/entry', { id: session.id, pin });
+    showConfirm(entryData.entries, false, null);
+  } catch (err) {
+    if (err.status === 429) {
+      startCooldown(err.data.cooldown_remaining_ms);
+    } else if (err.status === 401) {
+      showError('login-error', 'Contact or PIN not found. Double-check and try again.');
+      btn.innerHTML = 'Log In &amp; Enter';
+      btn.disabled = false;
+    } else {
+      showError('login-error', err.message || 'Login failed. Please try again.');
+      btn.innerHTML = 'Log In &amp; Enter';
+      btn.disabled = false;
+    }
+  }
+}
+
+// ── Survey ────────────────────────────────────────────────────────────────
+async function startSurvey() {
+  showScreen('screen-loading');
+  try {
+    surveyQuestions = await api('GET', '/survey/questions');
+    renderSurvey();
+    showScreen('screen-survey');
+  } catch {
+    showScreen('screen-survey-offer');
+  }
+}
+
+function renderSurvey() {
+  const container = document.getElementById('survey-questions');
+  document.getElementById('survey-progress').textContent =
+    `${surveyQuestions.length} questions · takes about 2 minutes`;
+  container.innerHTML = surveyQuestions.map((q, i) => {
+    let input = '';
+    if (q.question_type === 'scale') {
+      input = `
+        <div class="scale-row">
+          ${[1,2,3,4,5].map(n => `
+            <label>
+              <input type="radio" name="q${q.id}" value="${n}" />
+              <div class="scale-btn">${n}</div>
+            </label>
+          `).join('')}
+        </div>
+        <div class="scale-labels"><span>Not at all satisfied</span><span>Very satisfied</span></div>
+      `;
+    } else if (q.question_type === 'multiple_choice') {
+      input = q.choices.map(c => `
+        <div class="mc-option">
+          <label>
+            <input type="radio" name="q${q.id}" value="${c.id}" />
+            ${c.choice_text}
+          </label>
+        </div>
+      `).join('');
+    } else {
+      input = `<div class="field"><textarea name="q${q.id}" placeholder="Optional — share your thoughts…" rows="3"></textarea></div>`;
+    }
+    return `
+      <div class="survey-question">
+        <div class="q-text">${i + 1}. ${q.question_text}</div>
+        ${input}
+      </div>
+    `;
+  }).join('');
+}
+
+async function submitSurvey() {
+  const answers = surveyQuestions.map(q => {
+    let answer_text = null;
+    if (q.question_type === 'open_text') {
+      const ta = document.querySelector(`[name="q${q.id}"]`);
+      answer_text = ta ? ta.value.trim() || null : null;
+    } else {
+      const checked = document.querySelector(`[name="q${q.id}"]:checked`);
+      answer_text = checked ? checked.value : null;
+    }
+    return { question_id: q.id, answer_text };
+  }).filter(a => a.answer_text !== null);
+
+  const btn = document.getElementById('btn-submit-survey');
+  btn.innerHTML = '<span class="spinner"></span> Submitting…';
+  btn.disabled = true;
+
+  try {
+    const data = await api('POST', '/survey', { id: session.id, pin: session.pin, answers });
+    showConfirm(data.entries, true, data.bonus);
+  } catch {
+    btn.innerHTML = 'Submit &amp; Claim 5 Bonus Entries';
+    btn.disabled = false;
+  }
+}
+
+async function skipSurvey() {
+  try {
+    await api('POST', '/survey/skip', { id: session.id, pin: session.pin });
+  } catch { /* ignore */ }
+  // Fetch current entry count from participant record
+  const contact = document.getElementById('reg-contact')?.value?.trim() || '';
+  let entries = 1;
+  if (contact && session.pin) {
+    const loginData = await api('POST', '/login', { contact, pin: session.pin }).catch(() => null);
+    if (loginData) entries = loginData.entries;
+  }
+  showConfirm(entries, false, null);
+}
+
+// ── Cooldown ───────────────────────────────────────────────────────────────
+function startCooldown(remainingMs) {
+  showScreen('screen-cooldown');
+  if (countdownInterval) clearInterval(countdownInterval);
+  let remaining = Math.ceil(remainingMs / 1000);
+
+  function update() {
+    if (remaining <= 0) {
+      clearInterval(countdownInterval);
+      document.getElementById('countdown-display').textContent = '0:00';
+      // Auto-redirect to login after timer ends
+      setTimeout(() => showScreen('screen-login'), 500);
+      return;
+    }
+    const m = Math.floor(remaining / 60);
+    const s = remaining % 60;
+    document.getElementById('countdown-display').textContent =
+      `${m}:${String(s).padStart(2, '0')}`;
+    remaining--;
+  }
+  update();
+  countdownInterval = setInterval(update, 1000);
+}
+
+// ── Confirmation ──────────────────────────────────────────────────────────
+function showConfirm(entries, isSurvey, bonus) {
+  document.getElementById('confirm-count').textContent = entries;
+  const name = session.firstName ? `, ${session.firstName}` : '';
+  if (isSurvey) {
+    document.getElementById('confirm-title').textContent = `Survey Complete — Thanks${name}!`;
+    document.getElementById('confirm-subtitle').textContent =
+      `Your survey was recorded and ${bonus} bonus entries were added.`;
+    const bonusEl = document.getElementById('confirm-bonus');
+    bonusEl.textContent = `+${bonus} bonus entries added for completing the survey!`;
+    bonusEl.style.display = 'block';
+  } else {
+    document.getElementById('confirm-title').textContent = `You're Entered${name}!`;
+    document.getElementById('confirm-subtitle').textContent =
+      'Your entry has been recorded. Good luck!';
+    document.getElementById('confirm-bonus').style.display = 'none';
+  }
+  showScreen('screen-confirm');
+}
+
+// ── Init ───────────────────────────────────────────────────────────────────
+showScreen('screen-choose');
+
+// ── Admin PIN overlay ──────────────────────────────────────────────────────
+function openAdminOverlay() {
+  document.querySelectorAll('#pin-admin-wrap .pin-digit').forEach(i => i.value = '');
+  document.getElementById('admin-pin-error').textContent = '';
+  document.getElementById('admin-overlay').classList.remove('hidden');
+  document.getElementById('admin-pin-0').focus();
+}
+
+function closeAdminOverlay() {
+  document.getElementById('admin-overlay').classList.add('hidden');
+}
+
+async function checkAdminPin() {
+  const pin = Array.from(document.querySelectorAll('#pin-admin-wrap .pin-digit'))
+    .map(i => i.value).join('');
+  if (pin.length < 4) return;
+
+  document.getElementById('admin-pin-error').textContent = '';
+  try {
+    const res = await fetch('/api/admin/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ password: pin })
+    });
+    if (res.ok) {
+      sessionStorage.setItem('adminPin', pin);
+      window.location.href = '/admin';
+    } else {
+      document.getElementById('admin-pin-error').textContent = 'Incorrect PIN.';
+      document.querySelectorAll('#pin-admin-wrap .pin-digit').forEach(i => i.value = '');
+      document.getElementById('admin-pin-0').focus();
+    }
+  } catch {
+    document.getElementById('admin-pin-error').textContent = 'Could not reach server.';
+  }
+}
+
+// Auto-submit when 4th admin digit is entered
+document.getElementById('pin-admin-wrap').addEventListener('input', () => {
+  const pin = Array.from(document.querySelectorAll('#pin-admin-wrap .pin-digit'))
+    .map(i => i.value).join('');
+  if (pin.length === 4) checkAdminPin();
+});
+</script>
+</body>
+</html>

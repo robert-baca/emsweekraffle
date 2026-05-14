@@ -1,0 +1,12 @@
+{
+  "name": "ems-week-raffle",
+  "version": "1.0.0",
+  "description": "EMS Week 2026 Raffle App",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2"
+  }
+}

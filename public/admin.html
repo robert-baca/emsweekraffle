@@ -1,0 +1,880 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>EMS Week Raffle — Admin</title>
+<style>
+/* ============================================================
+   THEME — edit these to match your hospital branding
+   ============================================================ */
+:root {
+  --color-bg:           #0d1b2a;
+  --color-surface:      #162032;
+  --color-surface-alt:  #1e2f45;
+  --color-border:       #2a3f5a;
+  --color-accent:       #e63946;
+  --color-accent-hover: #c1121f;
+  --color-gold:         #ffd700;
+  --color-text:         #e8eef4;
+  --color-text-muted:   #7a9ab8;
+  --color-success:      #2ecc71;
+  --color-warning:      #f39c12;
+  --font-main:          'Segoe UI', system-ui, sans-serif;
+  --radius:             10px;
+  --radius-sm:          6px;
+  --shadow:             0 4px 24px rgba(0,0,0,0.4);
+}
+/* ============================================================ */
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: var(--font-main); background: var(--color-bg); color: var(--color-text); min-height: 100vh; }
+
+header {
+  background: linear-gradient(135deg, #0a111c 0%, #162032 60%, #1a0a0a 100%);
+  border-bottom: 3px solid var(--color-accent);
+  padding: 1rem 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+header h1 { font-size: 1.2rem; font-weight: 800; }
+header span { color: var(--color-accent); font-size: 0.8rem; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; margin-left: 0.5rem; }
+.header-back { margin-left: auto; font-size: 0.82rem; color: var(--color-text-muted); text-decoration: none; }
+.header-back:hover { color: var(--color-text); }
+
+/* ── Login ── */
+#login-wrap {
+  display: flex; justify-content: center; align-items: center;
+  min-height: calc(100vh - 70px); padding: 2rem 1rem;
+}
+.login-card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  padding: 2rem 2.25rem;
+  width: 100%; max-width: 380px;
+  box-shadow: var(--shadow);
+  text-align: center;
+}
+.login-card h2 { margin-bottom: 0.5rem; font-size: 1.2rem; }
+.login-card p { color: var(--color-text-muted); font-size: 0.88rem; margin-bottom: 1.5rem; }
+
+/* ── Admin layout ── */
+#admin-wrap { display: none; max-width: 1100px; margin: 0 auto; padding: 1.5rem 1rem 3rem; }
+
+/* ── Stats ── */
+.stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1rem; margin-bottom: 1.5rem; }
+.stat-card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  padding: 1.1rem 1.25rem;
+}
+.stat-card .val { font-size: 2rem; font-weight: 900; color: var(--color-accent); }
+.stat-card .lbl { font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.8px; color: var(--color-text-muted); margin-top: 0.2rem; }
+
+/* ── Tabs ── */
+.tabs { display: flex; gap: 0.25rem; margin-bottom: 1.5rem; border-bottom: 1px solid var(--color-border); padding-bottom: 0; }
+.tab-btn {
+  background: none; border: none; color: var(--color-text-muted);
+  font-family: var(--font-main); font-size: 0.92rem; font-weight: 600;
+  padding: 0.65rem 1.1rem; cursor: pointer; border-bottom: 2px solid transparent;
+  transition: color 0.15s, border-color 0.15s;
+  position: relative; top: 1px;
+}
+.tab-btn:hover { color: var(--color-text); }
+.tab-btn.active { color: var(--color-accent); border-bottom-color: var(--color-accent); }
+.tab-panel { display: none; }
+.tab-panel.active { display: block; }
+
+/* ── Forms / inputs ── */
+.field { margin-bottom: 0.85rem; }
+.field label { display: block; font-size: 0.78rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.7px; color: var(--color-text-muted); margin-bottom: 0.35rem; }
+.field input, .field select, .field textarea {
+  width: 100%; background: var(--color-surface-alt); border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm); color: var(--color-text); font-family: var(--font-main);
+  font-size: 0.92rem; padding: 0.55rem 0.8rem; outline: none; transition: border-color 0.2s;
+}
+.field input:focus, .field select:focus { border-color: var(--color-accent); }
+.field select option { background: var(--color-surface); }
+.field-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 0.75rem; }
+
+/* ── Buttons ── */
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 0.4rem; font-family: var(--font-main); font-size: 0.88rem; font-weight: 600; border: none; border-radius: var(--radius-sm); cursor: pointer; padding: 0.55rem 1rem; transition: background 0.15s; }
+.btn:active { opacity: 0.8; }
+.btn-primary { background: var(--color-accent); color: #fff; }
+.btn-primary:hover { background: var(--color-accent-hover); }
+.btn-secondary { background: var(--color-surface-alt); color: var(--color-text); border: 1px solid var(--color-border); }
+.btn-secondary:hover { background: var(--color-border); }
+.btn-danger { background: rgba(230,57,70,0.15); color: #ff8080; border: 1px solid rgba(230,57,70,0.3); }
+.btn-danger:hover { background: rgba(230,57,70,0.25); }
+.btn-success { background: rgba(46,204,113,0.15); color: var(--color-success); border: 1px solid rgba(46,204,113,0.3); }
+.btn-success:hover { background: rgba(46,204,113,0.25); }
+.btn-sm { font-size: 0.78rem; padding: 0.35rem 0.7rem; }
+.btn-full { width: 100%; }
+
+/* ── Panel card ── */
+.panel { background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius); padding: 1.25rem 1.4rem; margin-bottom: 1.25rem; }
+.panel h3 { font-size: 0.95rem; font-weight: 700; margin-bottom: 1rem; color: var(--color-text); }
+
+/* ── Participant table ── */
+.pt-table { width: 100%; border-collapse: collapse; font-size: 0.88rem; }
+.pt-table th { text-align: left; padding: 0.6rem 0.75rem; font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.8px; color: var(--color-text-muted); border-bottom: 1px solid var(--color-border); white-space: nowrap; }
+.pt-table td { padding: 0.65rem 0.75rem; border-bottom: 1px solid rgba(42,63,90,0.5); vertical-align: middle; }
+.pt-table tr:last-child td { border-bottom: none; }
+.pt-table tr:hover td { background: rgba(30,47,69,0.5); }
+.entry-badge {
+  display: inline-block; background: var(--color-accent); color: #fff;
+  font-size: 0.75rem; font-weight: 700; padding: 0.15rem 0.55rem;
+  border-radius: 20px; min-width: 2rem; text-align: center;
+}
+.badge-green { background: var(--color-success); }
+
+/* ── Alerts ── */
+.alert { padding: 0.7rem 1rem; border-radius: var(--radius-sm); font-size: 0.88rem; margin-bottom: 1rem; border: 1px solid transparent; }
+.alert-error { background: rgba(230,57,70,0.12); border-color: rgba(230,57,70,0.35); color: #ff8080; }
+.alert-success { background: rgba(46,204,113,0.1); border-color: rgba(46,204,113,0.3); color: var(--color-success); }
+
+/* ── Survey editor ── */
+.q-item {
+  background: var(--color-surface-alt); border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm); padding: 1rem 1.1rem; margin-bottom: 0.75rem;
+  cursor: grab;
+}
+.q-item:active { cursor: grabbing; }
+.q-item.drag-over { border-color: var(--color-accent); }
+.q-header { display: flex; align-items: flex-start; gap: 0.75rem; }
+.q-handle { color: var(--color-text-muted); font-size: 1.1rem; cursor: grab; padding: 0.1rem 0.2rem; flex-shrink: 0; margin-top: 0.1rem; }
+.q-text-wrap { flex: 1; }
+.q-text-main { font-weight: 600; font-size: 0.92rem; }
+.q-meta { font-size: 0.75rem; color: var(--color-text-muted); margin-top: 0.2rem; }
+.q-actions { display: flex; gap: 0.4rem; flex-shrink: 0; }
+.q-choices { margin-top: 0.75rem; padding-top: 0.75rem; border-top: 1px solid var(--color-border); }
+.choice-row { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.4rem; }
+.choice-row input { flex: 1; }
+.choice-row .btn-danger { flex-shrink: 0; }
+
+/* ── Draw ── */
+.winner-card {
+  background: linear-gradient(135deg, rgba(230,57,70,0.15), rgba(255,215,0,0.05));
+  border: 2px solid var(--color-accent);
+  border-radius: var(--radius);
+  padding: 1.75rem;
+  text-align: center;
+  margin: 1.25rem 0;
+}
+.winner-card .winner-name { font-size: 1.8rem; font-weight: 900; color: var(--color-gold); margin-bottom: 0.5rem; text-shadow: 0 0 20px rgba(255,215,0,0.4); }
+.winner-card .winner-meta { color: var(--color-text-muted); font-size: 0.9rem; line-height: 1.8; }
+.winner-card .winner-contact { font-size: 1rem; color: var(--color-text); font-weight: 600; margin-top: 0.5rem; }
+.draw-history-item { display: flex; align-items: center; gap: 1rem; padding: 0.75rem 0; border-bottom: 1px solid var(--color-border); font-size: 0.88rem; }
+.draw-history-item:last-child { border-bottom: none; }
+.draw-num { width: 1.6rem; height: 1.6rem; border-radius: 50%; background: var(--color-accent); color: #fff; font-weight: 700; font-size: 0.75rem; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.draw-name { font-weight: 600; }
+.draw-time { margin-left: auto; color: var(--color-text-muted); font-size: 0.78rem; white-space: nowrap; }
+
+/* ── Edit modal ── */
+.modal-backdrop {
+  position: fixed; inset: 0; background: rgba(0,0,0,0.6);
+  display: flex; align-items: center; justify-content: center;
+  z-index: 100; padding: 1rem;
+}
+.modal-backdrop.hidden { display: none; }
+.modal {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  padding: 1.75rem 2rem;
+  width: 100%; max-width: 480px;
+  box-shadow: var(--shadow);
+  max-height: 90vh; overflow-y: auto;
+}
+.modal h3 { font-size: 1.1rem; margin-bottom: 1.25rem; }
+.modal-footer { display: flex; gap: 0.75rem; justify-content: flex-end; margin-top: 1.25rem; }
+
+/* ── Misc ── */
+.section-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem; }
+.section-header h3 { font-size: 0.95rem; font-weight: 700; }
+.spinner { display: inline-block; width: 16px; height: 16px; border: 2px solid rgba(255,255,255,0.3); border-top-color: #fff; border-radius: 50%; animation: spin 0.7s linear infinite; vertical-align: middle; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.empty-state { text-align: center; color: var(--color-text-muted); padding: 2rem; font-size: 0.9rem; }
+</style>
+</head>
+<body>
+
+<header>
+  <span style="font-size:1.4rem">🚑</span>
+  <h1>EMS Week Raffle <span>Admin</span></h1>
+  <a href="/" class="header-back">← Back to Raffle</a>
+</header>
+
+<!-- Login -->
+<div id="login-wrap">
+  <div class="login-card">
+    <div style="font-size:2rem;margin-bottom:0.5rem">🔒</div>
+    <h2>Admin Login</h2>
+    <p>Enter the admin password to continue.</p>
+    <div id="login-error" class="alert alert-error" style="display:none"></div>
+    <div class="field">
+      <input type="password" id="admin-pw" placeholder="Password" autocomplete="current-password"
+        onkeydown="if(event.key==='Enter')adminLogin()" />
+    </div>
+    <button class="btn btn-primary btn-full" onclick="adminLogin()">Log In</button>
+  </div>
+</div>
+
+<!-- Admin panel -->
+<div id="admin-wrap">
+
+  <div class="stats-grid" id="stats-grid">
+    <div class="stat-card"><div class="val" id="stat-participants">—</div><div class="lbl">Participants</div></div>
+    <div class="stat-card"><div class="val" id="stat-entries">—</div><div class="lbl">Total Entries</div></div>
+    <div class="stat-card"><div class="val" id="stat-surveys">—</div><div class="lbl">Surveys Completed</div></div>
+    <div class="stat-card"><div class="val" id="stat-skipped">—</div><div class="lbl">Surveys Skipped</div></div>
+  </div>
+
+  <div class="tabs">
+    <button class="tab-btn active" onclick="switchTab('entries')">Entries</button>
+    <button class="tab-btn" onclick="switchTab('survey')">Survey Editor</button>
+    <button class="tab-btn" onclick="switchTab('draw')">Draw</button>
+  </div>
+
+  <!-- ── Entries Tab ── -->
+  <div id="tab-entries" class="tab-panel active">
+    <div class="panel">
+      <div class="section-header">
+        <h3>Manual Add</h3>
+      </div>
+      <div id="manual-error" class="alert alert-error" style="display:none"></div>
+      <div id="manual-success" class="alert alert-success" style="display:none"></div>
+      <div class="field-row">
+        <div class="field"><label>First Name</label><input id="m-first" type="text" /></div>
+        <div class="field"><label>Last Name</label><input id="m-last" type="text" /></div>
+      </div>
+      <div class="field-row">
+        <div class="field"><label>Contact</label><input id="m-contact" type="text" /></div>
+        <div class="field"><label>Department</label><input id="m-dept" type="text" /></div>
+      </div>
+      <div class="field-row">
+        <div class="field">
+          <label>Role</label>
+          <select id="m-role">
+            <option value="EMT-Basic">EMT-Basic</option>
+            <option value="AEMT">AEMT</option>
+            <option value="Paramedic">Paramedic</option>
+            <option value="First Responder/Fire">First Responder/Fire</option>
+            <option value="Dispatcher/Comm">Dispatcher/Comm</option>
+            <option value="Supervisor/Officer">Supervisor/Officer</option>
+            <option value="Other EMS Staff">Other EMS Staff</option>
+          </select>
+        </div>
+        <div class="field"><label>Entry Count</label><input id="m-entries" type="number" value="1" min="1" /></div>
+      </div>
+      <div class="field"><label>PIN (4 digits, default: 0000)</label><input id="m-pin" type="text" maxlength="4" placeholder="0000" /></div>
+      <button class="btn btn-primary" onclick="manualAdd()">Add Participant</button>
+    </div>
+
+    <div class="panel">
+      <div class="section-header">
+        <h3>All Participants</h3>
+        <a href="/api/admin/export" id="export-link" class="btn btn-secondary btn-sm">Export CSV</a>
+      </div>
+      <div id="participants-table-wrap">
+        <div class="empty-state">Loading…</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Survey Editor Tab ── -->
+  <div id="tab-survey" class="tab-panel">
+    <div class="panel">
+      <div class="section-header">
+        <h3>Survey Questions</h3>
+        <button class="btn btn-primary btn-sm" onclick="openAddQuestion()">+ Add Question</button>
+      </div>
+      <p style="font-size:0.82rem;color:var(--color-text-muted);margin-bottom:1rem;">Drag the ≡ handle to reorder. Changes apply to new survey submissions immediately.</p>
+      <div id="survey-editor-list"></div>
+    </div>
+  </div>
+
+  <!-- ── Draw Tab ── -->
+  <div id="tab-draw" class="tab-panel">
+    <div class="panel">
+      <h3>Weighted Drawing</h3>
+      <p style="font-size:0.88rem;color:var(--color-text-muted);margin-bottom:1.25rem;">
+        Each participant's entries are weighted — more entries = higher chance of being drawn. Click the button to pick a winner at random.
+      </p>
+      <button class="btn btn-primary" id="btn-draw" onclick="doDraw()">🎰 Draw Winner</button>
+      <div id="draw-result" style="display:none">
+        <div class="winner-card" id="winner-card"></div>
+        <div style="text-align:center;margin-top:0.75rem;">
+          <button class="btn btn-secondary" onclick="doDraw()">Draw Again</button>
+        </div>
+      </div>
+    </div>
+    <div class="panel">
+      <h3>Draw History</h3>
+      <div id="draw-history-list"><div class="empty-state">No draws yet.</div></div>
+    </div>
+  </div>
+
+</div><!-- /#admin-wrap -->
+
+<!-- Edit Participant Modal -->
+<div id="edit-modal" class="modal-backdrop hidden">
+  <div class="modal">
+    <h3>Edit Participant</h3>
+    <input type="hidden" id="edit-id" />
+    <div class="field-row">
+      <div class="field"><label>First Name</label><input id="edit-first" type="text" /></div>
+      <div class="field"><label>Last Name</label><input id="edit-last" type="text" /></div>
+    </div>
+    <div class="field"><label>Contact</label><input id="edit-contact" type="text" /></div>
+    <div class="field"><label>Department</label><input id="edit-dept" type="text" /></div>
+    <div class="field">
+      <label>Role</label>
+      <select id="edit-role">
+        <option>EMT-Basic</option><option>AEMT</option><option>Paramedic</option>
+        <option>First Responder/Fire</option><option>Dispatcher/Comm</option>
+        <option>Supervisor/Officer</option><option>Other EMS Staff</option>
+      </select>
+    </div>
+    <div class="field"><label>Entry Count</label><input id="edit-entries" type="number" min="0" /></div>
+    <div id="edit-error" class="alert alert-error" style="display:none"></div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeEditModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="saveEdit()">Save Changes</button>
+    </div>
+  </div>
+</div>
+
+<!-- Add/Edit Question Modal -->
+<div id="question-modal" class="modal-backdrop hidden">
+  <div class="modal">
+    <h3 id="qmodal-title">Add Survey Question</h3>
+    <input type="hidden" id="qmodal-id" />
+    <div class="field">
+      <label>Question Text</label>
+      <input id="qmodal-text" type="text" placeholder="Enter your question…" />
+    </div>
+    <div class="field">
+      <label>Type</label>
+      <select id="qmodal-type" onchange="onQTypeChange()">
+        <option value="scale">1–5 Scale</option>
+        <option value="multiple_choice">Multiple Choice</option>
+        <option value="open_text">Open Text</option>
+      </select>
+    </div>
+    <div id="qmodal-choices-wrap" style="display:none">
+      <div class="field" style="margin-bottom:0.5rem">
+        <label>Answer Choices</label>
+      </div>
+      <div id="qmodal-choices"></div>
+      <button class="btn btn-secondary btn-sm" style="margin-top:0.4rem" onclick="addChoiceRow()">+ Add Choice</button>
+    </div>
+    <div id="qmodal-error" class="alert alert-error" style="display:none"></div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeQModal()">Cancel</button>
+      <button class="btn btn-primary" id="qmodal-save" onclick="saveQuestion()">Save Question</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── State ──────────────────────────────────────────────────────────────────
+let adminPassword = '';
+let surveyQuestions = [];
+let participants = [];
+let dragSrcIdx = null;
+
+// ── API ────────────────────────────────────────────────────────────────────
+async function api(method, path, body) {
+  const opts = {
+    method,
+    headers: {
+      'Content-Type': 'application/json',
+      'x-admin-password': adminPassword
+    },
+    body: body ? JSON.stringify(body) : undefined
+  };
+  const res = await fetch('/api' + path, opts);
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw Object.assign(new Error(data.error || 'Request failed'), { status: res.status, data });
+  return data;
+}
+
+// ── Login ──────────────────────────────────────────────────────────────────
+async function adminLogin() {
+  const pw = document.getElementById('admin-pw').value;
+  document.getElementById('login-error').style.display = 'none';
+  try {
+    await fetch('/api/admin/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ password: pw })
+    }).then(async r => {
+      if (!r.ok) throw new Error('Wrong password');
+    });
+    adminPassword = pw;
+    document.getElementById('login-wrap').style.display = 'none';
+    document.getElementById('admin-wrap').style.display = 'block';
+    document.getElementById('export-link').href = `/api/admin/export?_pw=${encodeURIComponent(pw)}`;
+    // Re-add auth header for export
+    document.getElementById('export-link').addEventListener('click', e => {
+      e.preventDefault();
+      const a = document.createElement('a');
+      a.href = '/api/admin/export';
+      // Fetch with auth and trigger download
+      fetch('/api/admin/export', { headers: { 'x-admin-password': adminPassword } })
+        .then(r => r.blob())
+        .then(blob => {
+          const url = URL.createObjectURL(blob);
+          const link = document.createElement('a');
+          link.href = url;
+          link.download = 'ems-raffle-entries.csv';
+          link.click();
+          URL.revokeObjectURL(url);
+        });
+    });
+    loadAll();
+  } catch {
+    document.getElementById('login-error').textContent = 'Incorrect password.';
+    document.getElementById('login-error').style.display = 'block';
+  }
+}
+
+document.getElementById('admin-pw').addEventListener('keydown', e => {
+  if (e.key === 'Enter') adminLogin();
+});
+
+// Auto-login if arriving from the front-page PIN overlay
+(function() {
+  const saved = sessionStorage.getItem('adminPin');
+  if (saved) {
+    sessionStorage.removeItem('adminPin');
+    document.getElementById('admin-pw').value = saved;
+    adminLogin();
+  }
+})();
+
+// ── Tab switching ──────────────────────────────────────────────────────────
+function switchTab(name) {
+  document.querySelectorAll('.tab-btn').forEach((b, i) => b.classList.toggle('active', ['entries','survey','draw'][i] === name));
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.getElementById('tab-' + name).classList.add('active');
+}
+
+// ── Load all data ──────────────────────────────────────────────────────────
+async function loadAll() {
+  loadStats();
+  loadParticipants();
+  loadSurveyEditor();
+  loadDrawHistory();
+}
+
+async function loadStats() {
+  try {
+    const s = await api('GET', '/admin/stats');
+    document.getElementById('stat-participants').textContent = s.total_participants;
+    document.getElementById('stat-entries').textContent = s.total_entries;
+    document.getElementById('stat-surveys').textContent = s.surveys_completed;
+    document.getElementById('stat-skipped').textContent = s.surveys_skipped;
+  } catch {}
+}
+
+// ── Participants ───────────────────────────────────────────────────────────
+async function loadParticipants() {
+  try {
+    participants = await api('GET', '/admin/participants');
+    renderParticipants();
+  } catch {
+    document.getElementById('participants-table-wrap').innerHTML =
+      '<div class="empty-state">Failed to load participants.</div>';
+  }
+}
+
+function renderParticipants() {
+  const wrap = document.getElementById('participants-table-wrap');
+  if (!participants.length) {
+    wrap.innerHTML = '<div class="empty-state">No participants yet.</div>';
+    return;
+  }
+  wrap.innerHTML = `
+    <div style="overflow-x:auto">
+    <table class="pt-table">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Name</th>
+          <th>Department</th>
+          <th>Role</th>
+          <th>Contact</th>
+          <th>Survey</th>
+          <th>Entries</th>
+          <th>Registered</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        ${participants.map((p, i) => `
+          <tr>
+            <td style="color:var(--color-text-muted)">${i + 1}</td>
+            <td><strong>${escHtml(p.first_name)} ${escHtml(p.last_name)}</strong></td>
+            <td>${escHtml(p.department)}</td>
+            <td style="font-size:0.8rem;color:var(--color-text-muted)">${escHtml(p.role)}</td>
+            <td style="font-size:0.82rem;color:var(--color-text-muted)">${escHtml(p.contact)}</td>
+            <td>${p.survey_completed ? '<span class="entry-badge badge-green">Done</span>' : p.survey_skipped ? '<span style="font-size:0.78rem;color:var(--color-text-muted)">Skipped</span>' : '<span style="font-size:0.78rem;color:var(--color-text-muted)">—</span>'}</td>
+            <td><span class="entry-badge">${p.entries}</span></td>
+            <td style="font-size:0.78rem;color:var(--color-text-muted);white-space:nowrap">${fmtDate(p.registered_at)}</td>
+            <td style="white-space:nowrap">
+              <button class="btn btn-secondary btn-sm" onclick="openEditModal(${p.id})">Edit</button>
+              <button class="btn btn-danger btn-sm" onclick="deleteParticipant(${p.id}, '${escHtml(p.first_name)} ${escHtml(p.last_name)}')">Delete</button>
+            </td>
+          </tr>
+        `).join('')}
+      </tbody>
+    </table>
+    </div>
+  `;
+}
+
+function fmtDate(s) {
+  if (!s) return '—';
+  return new Date(s + 'Z').toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
+}
+
+function escHtml(s) {
+  return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// Manual add
+async function manualAdd() {
+  document.getElementById('manual-error').style.display = 'none';
+  document.getElementById('manual-success').style.display = 'none';
+  const body = {
+    first_name: document.getElementById('m-first').value.trim(),
+    last_name: document.getElementById('m-last').value.trim(),
+    contact: document.getElementById('m-contact').value.trim(),
+    department: document.getElementById('m-dept').value.trim(),
+    role: document.getElementById('m-role').value,
+    entries: parseInt(document.getElementById('m-entries').value) || 1,
+    pin: document.getElementById('m-pin').value || '0000'
+  };
+  if (!body.first_name || !body.last_name || !body.contact || !body.department) {
+    document.getElementById('manual-error').textContent = 'All fields except PIN are required.';
+    document.getElementById('manual-error').style.display = 'block';
+    return;
+  }
+  try {
+    await api('POST', '/admin/participants', body);
+    document.getElementById('manual-success').textContent = `${body.first_name} ${body.last_name} added successfully.`;
+    document.getElementById('manual-success').style.display = 'block';
+    ['m-first','m-last','m-contact','m-dept','m-pin'].forEach(id => document.getElementById(id).value = '');
+    document.getElementById('m-entries').value = '1';
+    loadStats();
+    loadParticipants();
+  } catch (err) {
+    document.getElementById('manual-error').textContent = err.message;
+    document.getElementById('manual-error').style.display = 'block';
+  }
+}
+
+// Edit modal
+function openEditModal(id) {
+  const p = participants.find(x => x.id === id);
+  if (!p) return;
+  document.getElementById('edit-id').value = id;
+  document.getElementById('edit-first').value = p.first_name;
+  document.getElementById('edit-last').value = p.last_name;
+  document.getElementById('edit-contact').value = p.contact;
+  document.getElementById('edit-dept').value = p.department;
+  document.getElementById('edit-role').value = p.role;
+  document.getElementById('edit-entries').value = p.entries;
+  document.getElementById('edit-error').style.display = 'none';
+  document.getElementById('edit-modal').classList.remove('hidden');
+}
+
+function closeEditModal() {
+  document.getElementById('edit-modal').classList.add('hidden');
+}
+
+async function saveEdit() {
+  const id = document.getElementById('edit-id').value;
+  const body = {
+    first_name: document.getElementById('edit-first').value.trim(),
+    last_name: document.getElementById('edit-last').value.trim(),
+    contact: document.getElementById('edit-contact').value.trim(),
+    department: document.getElementById('edit-dept').value.trim(),
+    role: document.getElementById('edit-role').value,
+    entries: parseInt(document.getElementById('edit-entries').value)
+  };
+  try {
+    await api('PUT', `/admin/participants/${id}`, body);
+    closeEditModal();
+    loadStats();
+    loadParticipants();
+  } catch (err) {
+    document.getElementById('edit-error').textContent = err.message;
+    document.getElementById('edit-error').style.display = 'block';
+  }
+}
+
+async function deleteParticipant(id, name) {
+  if (!confirm(`Delete ${name}? This cannot be undone.`)) return;
+  try {
+    await api('DELETE', `/admin/participants/${id}`);
+    loadStats();
+    loadParticipants();
+  } catch (err) {
+    alert('Delete failed: ' + err.message);
+  }
+}
+
+// ── Survey Editor ──────────────────────────────────────────────────────────
+async function loadSurveyEditor() {
+  try {
+    surveyQuestions = await api('GET', '/admin/survey/questions');
+    renderSurveyEditor();
+  } catch {}
+}
+
+function renderSurveyEditor() {
+  const list = document.getElementById('survey-editor-list');
+  if (!surveyQuestions.length) {
+    list.innerHTML = '<div class="empty-state">No questions yet.</div>';
+    return;
+  }
+  list.innerHTML = surveyQuestions.map((q, i) => `
+    <div class="q-item" draggable="true" data-idx="${i}"
+      ondragstart="dragStart(${i})" ondragover="dragOver(event,${i})" ondrop="drop(event,${i})" ondragleave="dragLeave(event)">
+      <div class="q-header">
+        <span class="q-handle">≡</span>
+        <div class="q-text-wrap">
+          <div class="q-text-main">${escHtml(q.question_text)}</div>
+          <div class="q-meta">${q.question_type === 'scale' ? '1–5 Scale' : q.question_type === 'multiple_choice' ? 'Multiple Choice' : 'Open Text'} · ${q.active ? 'Active' : 'Hidden'}</div>
+        </div>
+        <div class="q-actions">
+          <button class="btn btn-secondary btn-sm" onclick="openEditQuestion(${q.id})">Edit</button>
+          <button class="btn btn-danger btn-sm" onclick="deleteQuestion(${q.id})">Delete</button>
+        </div>
+      </div>
+      ${q.question_type === 'multiple_choice' && q.choices.length ? `
+        <div class="q-choices">
+          ${q.choices.map(c => `
+            <div class="choice-row" id="choice-row-${c.id}">
+              <input type="text" value="${escHtml(c.choice_text)}" style="background:var(--color-surface);border:1px solid var(--color-border);border-radius:4px;color:var(--color-text);font-family:var(--font-main);font-size:0.85rem;padding:0.3rem 0.6rem;outline:none;"
+                onblur="updateChoice(${c.id}, this.value)" />
+              <button class="btn btn-danger btn-sm" onclick="deleteChoice(${c.id}, ${q.id})">×</button>
+            </div>
+          `).join('')}
+          <button class="btn btn-secondary btn-sm" style="margin-top:0.25rem" onclick="addChoiceToQ(${q.id})">+ Add Choice</button>
+        </div>
+      ` : q.question_type === 'multiple_choice' ? `
+        <div class="q-choices">
+          <button class="btn btn-secondary btn-sm" onclick="addChoiceToQ(${q.id})">+ Add Choice</button>
+        </div>
+      ` : ''}
+    </div>
+  `).join('');
+}
+
+// Drag-to-reorder
+function dragStart(idx) { dragSrcIdx = idx; }
+function dragOver(e, idx) {
+  e.preventDefault();
+  document.querySelectorAll('.q-item').forEach(el => el.classList.remove('drag-over'));
+  e.currentTarget.classList.add('drag-over');
+}
+function dragLeave(e) { e.currentTarget.classList.remove('drag-over'); }
+async function drop(e, idx) {
+  e.preventDefault();
+  document.querySelectorAll('.q-item').forEach(el => el.classList.remove('drag-over'));
+  if (dragSrcIdx === null || dragSrcIdx === idx) return;
+  const moved = surveyQuestions.splice(dragSrcIdx, 1)[0];
+  surveyQuestions.splice(idx, 0, moved);
+  renderSurveyEditor();
+  await api('POST', '/admin/survey/reorder', { order: surveyQuestions.map(q => q.id) });
+  dragSrcIdx = null;
+}
+
+async function deleteQuestion(id) {
+  if (!confirm('Delete this question? All existing answers for it will also be deleted.')) return;
+  await api('DELETE', `/admin/survey/questions/${id}`);
+  loadSurveyEditor();
+}
+
+async function addChoiceToQ(questionId) {
+  const text = prompt('New choice text:');
+  if (!text) return;
+  await api('POST', '/admin/survey/choices', { question_id: questionId, choice_text: text });
+  loadSurveyEditor();
+}
+
+async function updateChoice(id, text) {
+  if (!text.trim()) return;
+  await api('PUT', `/admin/survey/choices/${id}`, { choice_text: text.trim() });
+}
+
+async function deleteChoice(id) {
+  if (!confirm('Delete this choice?')) return;
+  await api('DELETE', `/admin/survey/choices/${id}`);
+  loadSurveyEditor();
+}
+
+// Add/edit question modal
+let editingQuestionChoices = [];
+
+function openAddQuestion() {
+  document.getElementById('qmodal-title').textContent = 'Add Survey Question';
+  document.getElementById('qmodal-id').value = '';
+  document.getElementById('qmodal-text').value = '';
+  document.getElementById('qmodal-type').value = 'scale';
+  editingQuestionChoices = [];
+  onQTypeChange();
+  document.getElementById('qmodal-error').style.display = 'none';
+  document.getElementById('question-modal').classList.remove('hidden');
+}
+
+function openEditQuestion(id) {
+  const q = surveyQuestions.find(x => x.id === id);
+  if (!q) return;
+  document.getElementById('qmodal-title').textContent = 'Edit Question';
+  document.getElementById('qmodal-id').value = id;
+  document.getElementById('qmodal-text').value = q.question_text;
+  document.getElementById('qmodal-type').value = q.question_type;
+  editingQuestionChoices = (q.choices || []).map(c => ({ ...c }));
+  onQTypeChange();
+  renderQModalChoices();
+  document.getElementById('qmodal-error').style.display = 'none';
+  document.getElementById('question-modal').classList.remove('hidden');
+}
+
+function closeQModal() {
+  document.getElementById('question-modal').classList.add('hidden');
+}
+
+function onQTypeChange() {
+  const type = document.getElementById('qmodal-type').value;
+  document.getElementById('qmodal-choices-wrap').style.display = type === 'multiple_choice' ? 'block' : 'none';
+}
+
+function renderQModalChoices() {
+  const wrap = document.getElementById('qmodal-choices');
+  wrap.innerHTML = editingQuestionChoices.map((c, i) => `
+    <div class="choice-row">
+      <input type="text" value="${escHtml(c.choice_text)}" onchange="editingQuestionChoices[${i}].choice_text=this.value" style="flex:1;background:var(--color-surface-alt);border:1px solid var(--color-border);border-radius:4px;color:var(--color-text);font-family:var(--font-main);font-size:0.88rem;padding:0.35rem 0.65rem;outline:none;" />
+      <button class="btn btn-danger btn-sm" onclick="editingQuestionChoices.splice(${i},1);renderQModalChoices()">×</button>
+    </div>
+  `).join('');
+}
+
+function addChoiceRow() {
+  editingQuestionChoices.push({ choice_text: '' });
+  renderQModalChoices();
+  const inputs = document.querySelectorAll('#qmodal-choices input');
+  if (inputs.length) inputs[inputs.length - 1].focus();
+}
+
+async function saveQuestion() {
+  const id = document.getElementById('qmodal-id').value;
+  const text = document.getElementById('qmodal-text').value.trim();
+  const type = document.getElementById('qmodal-type').value;
+  if (!text) {
+    document.getElementById('qmodal-error').textContent = 'Question text is required.';
+    document.getElementById('qmodal-error').style.display = 'block';
+    return;
+  }
+
+  // Sync choice edits from DOM
+  document.querySelectorAll('#qmodal-choices input').forEach((inp, i) => {
+    if (editingQuestionChoices[i]) editingQuestionChoices[i].choice_text = inp.value;
+  });
+
+  try {
+    if (id) {
+      await api('PUT', `/admin/survey/questions/${id}`, { question_text: text, question_type: type });
+      // Handle choices: delete removed, update existing, add new
+      const q = surveyQuestions.find(x => x.id == id);
+      const existingIds = (q.choices || []).map(c => c.id);
+      const keepIds = editingQuestionChoices.filter(c => c.id).map(c => c.id);
+      // Delete removed
+      for (const cid of existingIds) {
+        if (!keepIds.includes(cid)) await api('DELETE', `/admin/survey/choices/${cid}`);
+      }
+      // Update existing
+      for (const c of editingQuestionChoices.filter(c => c.id && c.choice_text.trim())) {
+        await api('PUT', `/admin/survey/choices/${c.id}`, { choice_text: c.choice_text.trim() });
+      }
+      // Add new
+      for (const c of editingQuestionChoices.filter(c => !c.id && c.choice_text.trim())) {
+        await api('POST', '/admin/survey/choices', { question_id: parseInt(id), choice_text: c.choice_text.trim() });
+      }
+    } else {
+      const choices = editingQuestionChoices.map(c => c.choice_text).filter(Boolean);
+      await api('POST', '/admin/survey/questions', { question_text: text, question_type: type, choices });
+    }
+    closeQModal();
+    loadSurveyEditor();
+  } catch (err) {
+    document.getElementById('qmodal-error').textContent = err.message;
+    document.getElementById('qmodal-error').style.display = 'block';
+  }
+}
+
+// ── Draw ───────────────────────────────────────────────────────────────────
+async function doDraw() {
+  const btn = document.getElementById('btn-draw');
+  btn.innerHTML = '<span class="spinner"></span> Drawing…';
+  btn.disabled = true;
+  try {
+    const w = await api('POST', '/admin/draw');
+    document.getElementById('winner-card').innerHTML = `
+      <div style="font-size:1.5rem;margin-bottom:0.5rem">🏆</div>
+      <div class="winner-name">${escHtml(w.first_name)} ${escHtml(w.last_name)}</div>
+      <div class="winner-meta">
+        ${escHtml(w.department)} · ${escHtml(w.role)}<br>
+        ${w.entries} ${w.entries === 1 ? 'entry' : 'entries'}
+      </div>
+      <div class="winner-contact">${escHtml(w.contact)}</div>
+    `;
+    document.getElementById('draw-result').style.display = 'block';
+    loadDrawHistory();
+  } catch (err) {
+    alert('Draw failed: ' + err.message);
+  } finally {
+    btn.innerHTML = '🎰 Draw Winner';
+    btn.disabled = false;
+  }
+}
+
+async function loadDrawHistory() {
+  try {
+    const history = await api('GET', '/admin/draw/history');
+    const list = document.getElementById('draw-history-list');
+    if (!history.length) {
+      list.innerHTML = '<div class="empty-state">No draws yet.</div>';
+      return;
+    }
+    list.innerHTML = history.map((d, i) => `
+      <div class="draw-history-item">
+        <div class="draw-num">${i + 1}</div>
+        <div>
+          <div class="draw-name">${escHtml(d.first_name)} ${escHtml(d.last_name)}</div>
+          <div style="font-size:0.78rem;color:var(--color-text-muted)">${escHtml(d.department)} · ${escHtml(d.role)}</div>
+        </div>
+        <div class="draw-time">${fmtDate(d.drawn_at)}</div>
+      </div>
+    `).join('');
+  } catch {}
+}
+
+// Close modals on backdrop click
+document.getElementById('edit-modal').addEventListener('click', e => {
+  if (e.target === document.getElementById('edit-modal')) closeEditModal();
+});
+document.getElementById('question-modal').addEventListener('click', e => {
+  if (e.target === document.getElementById('question-modal')) closeQModal();
+});
+</script>
+</body>
+</html>
