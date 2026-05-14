@@ -6,24 +6,36 @@
 <title>EMS Week 2026 — Raffle</title>
 <style>
 /* ============================================================
-   THEME — edit these to match your hospital branding
+   THEME — Baylor Scott & White Medical Center · Grapevine
+   Edit these variables to update branding site-wide.
    ============================================================ */
 :root {
-  --color-bg:           #0d1b2a;       /* page background */
-  --color-surface:      #162032;       /* card/panel background */
-  --color-surface-alt:  #1e2f45;       /* alternate surface / input bg */
-  --color-border:       #2a3f5a;       /* borders and dividers */
-  --color-accent:       #e63946;       /* primary red accent */
-  --color-accent-hover: #c1121f;       /* red on hover */
-  --color-gold:         #ffd700;       /* star / highlight color */
-  --color-text:         #e8eef4;       /* primary text */
-  --color-text-muted:   #7a9ab8;       /* secondary / muted text */
-  --color-success:      #2ecc71;       /* success green */
-  --color-warning:      #f39c12;       /* warning amber */
-  --font-main:          'Segoe UI', system-ui, sans-serif;
+  /* BSW Dark Gray as the base surface palette */
+  --color-bg:           #111112;       /* page background */
+  --color-surface:      #222224;       /* card/panel background */
+  --color-surface-alt:  #2e2e31;       /* alternate surface / input bg */
+  --color-border:       #3d3d40;       /* borders — lighter BSW gray */
+
+  /* BSW accent colors */
+  --color-accent:       #007eb4;       /* BSW blue — primary CTA */
+  --color-accent-hover: #005f87;       /* BSW blue dark */
+  --color-gold:         #ffb71b;       /* BSW yellow — winner / highlight */
+  --color-orange:       #ff9527;       /* BSW orange */
+  --color-teal:         #3f9f90;       /* BSW teal / green */
+  --color-purple:       #8f659c;       /* BSW purple */
+
+  /* Text */
+  --color-text:         #f2f2f2;       /* primary text */
+  --color-text-muted:   #909092;       /* BSW gray muted */
+
+  /* Status */
+  --color-success:      #3f9f90;       /* BSW teal */
+  --color-warning:      #ff9527;       /* BSW orange */
+
+  --font-main:          Arial, 'Helvetica Neue', sans-serif;   /* BSW approved web font */
   --radius:             10px;
   --radius-sm:          6px;
-  --shadow:             0 4px 24px rgba(0,0,0,0.4);
+  --shadow:             0 4px 24px rgba(0,0,0,0.5);
 }
 /* ============================================================ */
 
@@ -40,17 +52,19 @@ body {
 
 /* ── Header ── */
 header {
-  background: linear-gradient(135deg, #0a111c 0%, #162032 60%, #1a0a0a 100%);
+  background: linear-gradient(135deg, #0a0a0b 0%, #1c1c1e 60%, #222224 100%);
   border-bottom: 3px solid var(--color-accent);
-  padding: 1.25rem 2rem;
+  padding: 1rem 1.75rem;
   display: flex;
   align-items: center;
   gap: 1.25rem;
   box-shadow: var(--shadow);
 }
-.header-star {
-  font-size: 2.4rem;
-  filter: drop-shadow(0 0 8px var(--color-gold));
+.header-logo {
+  height: 48px;
+  width: auto;
+  filter: brightness(0) invert(1);   /* renders the gray logo white on dark bg */
+  opacity: 0.92;
 }
 .header-title { line-height: 1.2; }
 .header-title h1 {
@@ -61,7 +75,7 @@ header {
 }
 .header-title p {
   font-size: 0.82rem;
-  color: var(--color-accent);
+  color: var(--color-gold);
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 1.5px;
@@ -424,15 +438,15 @@ footer {
 <body>
 
 <header>
-  <div class="header-star">⭐</div>
+  <img src="/bsw-logo.png" alt="Baylor Scott & White Medical Center Grapevine" class="header-logo" />
   <div class="header-title">
     <h1>EMS Week Raffle</h1>
     <p>National EMS Week 2026</p>
   </div>
   <div class="header-badge">May 17–23</div>
 </header>
-<div style="text-align:center;padding:0.45rem 1rem;font-size:0.72rem;letter-spacing:0.8px;color:var(--color-text-muted);border-bottom:1px solid var(--color-border);background:var(--color-surface);">
-  A Baylor Grapevine EMS Solution
+<div style="text-align:center;padding:0.4rem 1rem;font-size:0.7rem;letter-spacing:1px;text-transform:uppercase;color:#4d4d4f;border-bottom:1px solid var(--color-border);background:#1a1a1c;">
+  A Baylor Scott &amp; White Grapevine EMS Solution
 </div>
 
 <main>
