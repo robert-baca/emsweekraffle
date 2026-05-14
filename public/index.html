@@ -593,6 +593,8 @@ footer {
         <div style="font-size:0.82rem;color:var(--color-text-muted);margin-bottom:0.75rem;">Take a picture of you or your crew enjoying EMS Week and post it to earn 2 extra entries. One per profile.</div>
         <button class="btn btn-primary btn-sm" onclick="showScreen('screen-photo')">Upload Crew Photo</button>
       </div>
+      <br>
+      <button class="btn btn-ghost btn-full" onclick="goHome()">← Home</button>
     </div>
 
     <!-- ── Screen: Photo Upload ── -->
@@ -637,6 +639,8 @@ footer {
         Come back in 15 minutes for another entry!<br>
         Drawing takes place at the end of EMS Week.
       </div>
+      <br>
+      <button class="btn btn-ghost btn-full" onclick="goHome()">← Home</button>
     </div>
 
   </div><!-- /.card -->
@@ -1026,6 +1030,12 @@ async function submitPhoto() {
 function skipPhoto() {
   session.photoSubmitted = true; // don't re-offer this session
   showScreen('screen-confirm');
+}
+
+function goHome() {
+  if (countdownInterval) { clearInterval(countdownInterval); countdownInterval = null; }
+  session = { id: null, pin: null, firstName: null, photoSubmitted: false };
+  showScreen('screen-choose');
 }
 
 // ── Init ───────────────────────────────────────────────────────────────────
