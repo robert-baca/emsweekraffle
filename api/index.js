@@ -342,11 +342,17 @@ app.get('/api/admin/stats', requireAdmin, async (req, res) => {
 
 app.get('/api/admin/photos', requireAdmin, async (req, res) => {
   const photos = rows(await db.execute(`
-    SELECT cp.id, cp.image_data, cp.submitted_at, p.first_name, p.last_name, p.department
+    SELECT cp.id, cp.submitted_at, p.first_name, p.last_name, p.department
     FROM crew_photos cp JOIN participants p ON p.id = cp.participant_id
     ORDER BY cp.submitted_at DESC
   `));
   res.json(photos);
+});
+
+app.get('/api/admin/photos/:id/data', requireAdmin, async (req, res) => {
+  const photo = row(await db.execute({ sql: 'SELECT image_data FROM crew_photos WHERE id=?', args: [req.params.id] }));
+  if (!photo) return res.status(404).json({ error: 'Not found' });
+  res.json({ image_data: photo.image_data });
 });
 
 app.get('/api/admin/participants', requireAdmin, async (req, res) => {

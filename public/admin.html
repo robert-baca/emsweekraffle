@@ -898,10 +898,20 @@ document.getElementById('question-modal').addEventListener('click', e => {
 
 // ── Crew Photos ────────────────────────────────────────────────────────────
 let cachedPhotos = [];
+const photoDataCache = new Map(); // id → base64 image_data
+let photoObserver = null;
+
+async function fetchPhotoData(id) {
+  if (photoDataCache.has(id)) return photoDataCache.get(id);
+  const res = await api('GET', `/admin/photos/${id}/data`);
+  photoDataCache.set(id, res.image_data);
+  return res.image_data;
+}
 
 async function loadPhotos() {
   const grid = document.getElementById('photos-grid');
   grid.innerHTML = '<div class="empty-state">Loading…</div>';
+  if (photoObserver) { photoObserver.disconnect(); photoObserver = null; }
   try {
     cachedPhotos = await api('GET', '/admin/photos');
     if (!cachedPhotos.length) {
@@ -910,28 +920,46 @@ async function loadPhotos() {
       return;
     }
     document.getElementById('btn-download-all').style.display = 'inline-flex';
-    grid.innerHTML = cachedPhotos.map((p, i) => `
-      <div style="border-radius:var(--radius-sm);overflow:hidden;border:1px solid var(--color-border);background:var(--color-surface-alt);">
-        <a href="${p.image_data}" target="_blank">
-          <img src="${p.image_data}" alt="Crew photo" style="width:100%;height:160px;object-fit:cover;display:block;cursor:pointer;" />
-        </a>
+    grid.innerHTML = cachedPhotos.map(p => `
+      <div class="photo-card" data-photo-id="${p.id}" style="border-radius:var(--radius-sm);overflow:hidden;border:1px solid var(--color-border);background:var(--color-surface-alt);">
+        <div class="photo-placeholder" style="width:100%;height:160px;background:var(--color-surface);display:flex;align-items:center;justify-content:center;color:var(--color-text-muted);font-size:0.8rem;">Loading…</div>
+        <img alt="Crew photo" style="width:100%;height:160px;object-fit:cover;display:none;cursor:pointer;" onclick="this.closest('.photo-card').querySelector('a') && this.closest('.photo-card').querySelector('a').click()" />
         <div style="padding:0.6rem 0.7rem;">
           <div style="font-size:0.82rem;font-weight:700;color:var(--color-text);margin-bottom:0.15rem;">${escHtml(p.first_name)} ${escHtml(p.last_name)}</div>
           <div style="font-size:0.75rem;color:var(--color-text-muted);margin-bottom:0.5rem;">${escHtml(p.department)} · ${fmtDate(p.submitted_at)}</div>
-          <button class="btn btn-secondary btn-sm btn-full" onclick="downloadPhoto(${i})">⬇ Download</button>
+          <button class="btn btn-secondary btn-sm btn-full" onclick="downloadPhotoById(${p.id}, '${escHtml(p.first_name)}-${escHtml(p.last_name)}')">⬇ Download</button>
         </div>
       </div>
     `).join('');
+
+    photoObserver = new IntersectionObserver(entries => {
+      entries.forEach(entry => {
+        if (!entry.isIntersecting) return;
+        const card = entry.target;
+        const id = parseInt(card.dataset.photoId);
+        photoObserver.unobserve(card);
+        fetchPhotoData(id).then(imgData => {
+          const img = card.querySelector('img');
+          const placeholder = card.querySelector('.photo-placeholder');
+          img.src = imgData;
+          img.style.display = 'block';
+          img.onclick = () => { const a = document.createElement('a'); a.href = imgData; a.target = '_blank'; a.click(); };
+          if (placeholder) placeholder.remove();
+        }).catch(() => {});
+      });
+    }, { rootMargin: '150px' });
+
+    document.querySelectorAll('.photo-card').forEach(card => photoObserver.observe(card));
   } catch (err) {
     grid.innerHTML = `<div class="empty-state">Failed to load photos: ${err.message}</div>`;
   }
 }
 
-function downloadPhoto(idx) {
-  const p = cachedPhotos[idx];
+async function downloadPhotoById(id, name) {
+  const imageData = await fetchPhotoData(id);
   const a = document.createElement('a');
-  a.href = p.image_data;
-  a.download = `ems-crew-${p.first_name}-${p.last_name}.jpg`.replace(/\s+/g, '-').toLowerCase();
+  a.href = imageData;
+  a.download = `ems-crew-${name}.jpg`.replace(/\s+/g, '-').toLowerCase();
   a.click();
 }
 
@@ -939,9 +967,9 @@ async function downloadAllPhotos() {
   const btn = document.getElementById('btn-download-all');
   btn.innerHTML = '⬇ Downloading…';
   btn.disabled = true;
-  for (let i = 0; i < cachedPhotos.length; i++) {
-    downloadPhoto(i);
-    await new Promise(r => setTimeout(r, 400)); // stagger to avoid browser blocking
+  for (const p of cachedPhotos) {
+    await downloadPhotoById(p.id, `${p.first_name}-${p.last_name}`);
+    await new Promise(r => setTimeout(r, 400));
   }
   btn.innerHTML = '⬇ Download All';
   btn.disabled = false;
