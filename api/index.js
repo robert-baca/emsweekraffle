@@ -60,7 +60,18 @@ async function initDb() {
       participant_id INTEGER NOT NULL REFERENCES participants(id) ON DELETE CASCADE,
       drawn_at TEXT NOT NULL DEFAULT (datetime('now'))
     );
+    CREATE TABLE IF NOT EXISTS crew_photos (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      participant_id INTEGER NOT NULL REFERENCES participants(id) ON DELETE CASCADE,
+      image_data TEXT NOT NULL,
+      submitted_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
   `);
+
+  // Add photo_submitted column if it doesn't exist yet (migration)
+  try {
+    await db.execute("ALTER TABLE participants ADD COLUMN photo_submitted INTEGER NOT NULL DEFAULT 0");
+  } catch { /* column already exists */ }
 
   const { rows } = await db.execute('SELECT COUNT(*) as cnt FROM survey_questions');
   if (rows[0].cnt) return;
@@ -214,6 +225,7 @@ app.post('/api/login', async (req, res) => {
     entries: participant.entries,
     survey_completed: participant.survey_completed,
     survey_skipped: participant.survey_skipped,
+    photo_submitted: participant.photo_submitted || 0,
     cooldown_remaining_ms: cooldownMs
   });
 });
@@ -285,6 +297,27 @@ app.get('/api/survey/questions', async (req, res) => {
   res.json(questions);
 });
 
+// ── Crew photo ───────────────────────────────────────────────────────────────
+
+app.post('/api/photo', async (req, res) => {
+  const { id, pin, imageData } = req.body;
+  if (!id || !pin || !imageData) return res.status(400).json({ error: 'Missing fields' });
+
+  const participant = row(await db.execute({ sql: 'SELECT * FROM participants WHERE id=?', args: [id] }));
+  if (!participant || participant.pin_hash !== hashPin(pin))
+    return res.status(401).json({ error: 'Invalid credentials' });
+  if (participant.photo_submitted)
+    return res.status(409).json({ error: 'Photo already submitted' });
+
+  await db.batch([
+    { sql: 'INSERT INTO crew_photos (participant_id, image_data) VALUES (?, ?)', args: [id, imageData] },
+    { sql: "UPDATE participants SET photo_submitted=1, entries=entries+2, last_entry_at=datetime('now') WHERE id=?", args: [id] }
+  ], 'write');
+
+  const updated = row(await db.execute({ sql: 'SELECT entries FROM participants WHERE id=?', args: [id] }));
+  res.json({ entries: updated.entries, bonus: 2 });
+});
+
 // ── Admin API ─────────────────────────────────────────────────────────────────
 
 app.post('/api/admin/login', (req, res) => {
@@ -293,18 +326,27 @@ app.post('/api/admin/login', (req, res) => {
 });
 
 app.get('/api/admin/stats', requireAdmin, async (req, res) => {
-  const [p, e, sc, ss] = await Promise.all([
+  const [p, e, sc, ph] = await Promise.all([
     db.execute('SELECT COUNT(*) as n FROM participants'),
     db.execute('SELECT SUM(entries) as n FROM participants'),
     db.execute('SELECT COUNT(*) as n FROM participants WHERE survey_completed=1'),
-    db.execute('SELECT COUNT(*) as n FROM participants WHERE survey_skipped=1'),
+    db.execute('SELECT COUNT(*) as n FROM crew_photos'),
   ]);
   res.json({
     total_participants: row(p).n,
     total_entries: row(e).n || 0,
     surveys_completed: row(sc).n,
-    surveys_skipped: row(ss).n,
+    photos_submitted: row(ph).n,
   });
+});
+
+app.get('/api/admin/photos', requireAdmin, async (req, res) => {
+  const photos = rows(await db.execute(`
+    SELECT cp.id, cp.image_data, cp.submitted_at, p.first_name, p.last_name, p.department
+    FROM crew_photos cp JOIN participants p ON p.id = cp.participant_id
+    ORDER BY cp.submitted_at DESC
+  `));
+  res.json(photos);
 });
 
 app.get('/api/admin/participants', requireAdmin, async (req, res) => {

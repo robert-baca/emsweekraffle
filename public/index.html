@@ -455,7 +455,7 @@ footer {
       <button class="btn btn-secondary btn-full" onclick="showScreen('screen-login')">I've Been Here Before — Log In</button>
       <hr class="divider">
       <a href="/ems-schedule.jpg" download class="btn btn-secondary btn-full" id="schedule-btn" style="text-decoration:none;font-size:0.88rem;color:var(--color-text-muted);">
-        📅 View EMS Week Schedule
+        📅 Download EMS Week Schedule
       </a>
     </div>
 
@@ -574,6 +574,26 @@ footer {
       </div>
     </div>
 
+    <!-- ── Screen: Photo Upload ── -->
+    <div id="screen-photo" class="screen">
+      <div class="card-icon">📸</div>
+      <h2>Crew Photo = 2 Bonus Entries!</h2>
+      <p class="subtitle">Snap a crew photo at Baylor Grapevine during EMS Week and earn <strong>2 extra entries</strong> — one time per person.</p>
+      <div id="photo-preview-wrap" style="display:none;margin-bottom:1rem;">
+        <img id="photo-preview" src="" alt="Preview" style="width:100%;border-radius:var(--radius);border:2px solid var(--color-accent);" />
+      </div>
+      <div class="field">
+        <label for="photo-input">Select or Take a Photo</label>
+        <input type="file" id="photo-input" accept="image/*" capture="environment"
+          style="background:var(--color-surface-alt);border:1px solid var(--color-border);border-radius:var(--radius-sm);color:var(--color-text);padding:0.6rem;width:100%;"
+          onchange="onPhotoSelected(this)" />
+      </div>
+      <div id="photo-error" class="alert alert-error" style="display:none"></div>
+      <button class="btn btn-primary" id="btn-submit-photo" onclick="submitPhoto()" disabled>Submit Photo &amp; Claim 2 Entries</button>
+      <br><br>
+      <button class="btn btn-ghost btn-full" onclick="skipPhoto()">No Thanks, Skip</button>
+    </div>
+
     <!-- ── Screen: Confirmation ── -->
     <div id="screen-confirm" class="screen">
       <div class="card-icon">🎉</div>
@@ -585,8 +605,15 @@ footer {
       </div>
       <div id="confirm-bonus" class="alert alert-success" style="display:none"></div>
       <hr class="divider">
+      <!-- Photo CTA — shown only if photo not yet submitted -->
+      <div id="photo-cta" style="display:none;background:var(--color-surface-alt);border:1px solid var(--color-border);border-radius:var(--radius);padding:1rem 1.25rem;margin-bottom:1rem;text-align:center;">
+        <div style="font-size:1.4rem;margin-bottom:0.35rem">📸</div>
+        <div style="font-weight:700;font-size:0.95rem;margin-bottom:0.3rem;">Earn 2 More Entries!</div>
+        <div style="font-size:0.82rem;color:var(--color-text-muted);margin-bottom:0.75rem;">Take a crew photo at Baylor Grapevine for 2 bonus entries.</div>
+        <button class="btn btn-primary btn-sm" onclick="showScreen('screen-photo')">Upload Crew Photo</button>
+      </div>
       <div style="text-align:center;font-size:0.88rem;color:var(--color-text-muted);line-height:1.7;">
-        Come back tomorrow for another entry!<br>
+        Come back in 15 minutes for another entry!<br>
         Drawing takes place at the end of EMS Week.
       </div>
     </div>
@@ -618,7 +645,7 @@ footer {
 
 <script>
 // ── State ──────────────────────────────────────────────────────────────────
-let session = { id: null, pin: null, firstName: null };
+let session = { id: null, pin: null, firstName: null, photoSubmitted: false };
 let surveyQuestions = [];
 let countdownInterval = null;
 
@@ -752,6 +779,7 @@ async function submitLogin(evt) {
     session.id = loginData.id;
     session.pin = pin;
     session.firstName = loginData.first_name;
+    session.photoSubmitted = !!loginData.photo_submitted;
 
     if (loginData.cooldown_remaining_ms > 0) {
       startCooldown(loginData.cooldown_remaining_ms);
@@ -908,6 +936,72 @@ function showConfirm(entries, isSurvey, bonus) {
       'Your entry has been recorded. Good luck!';
     document.getElementById('confirm-bonus').style.display = 'none';
   }
+  // Show photo CTA only if they haven't uploaded yet
+  document.getElementById('photo-cta').style.display = session.photoSubmitted ? 'none' : 'block';
+  showScreen('screen-confirm');
+}
+
+// ── Photo upload ──────────────────────────────────────────────────────────
+let selectedPhotoData = null;
+
+function onPhotoSelected(input) {
+  const file = input.files[0];
+  if (!file) return;
+  document.getElementById('photo-error').style.display = 'none';
+
+  compressImage(file).then(dataUrl => {
+    selectedPhotoData = dataUrl;
+    const preview = document.getElementById('photo-preview');
+    preview.src = dataUrl;
+    document.getElementById('photo-preview-wrap').style.display = 'block';
+    document.getElementById('btn-submit-photo').disabled = false;
+  });
+}
+
+function compressImage(file, maxPx = 1024, quality = 0.72) {
+  return new Promise(resolve => {
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    img.onload = () => {
+      const scale = Math.min(maxPx / img.width, maxPx / img.height, 1);
+      const canvas = document.createElement('canvas');
+      canvas.width = Math.round(img.width * scale);
+      canvas.height = Math.round(img.height * scale);
+      canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+      URL.revokeObjectURL(url);
+      resolve(canvas.toDataURL('image/jpeg', quality));
+    };
+    img.src = url;
+  });
+}
+
+async function submitPhoto() {
+  if (!selectedPhotoData) return;
+  const btn = document.getElementById('btn-submit-photo');
+  btn.innerHTML = '<span class="spinner"></span> Uploading…';
+  btn.disabled = true;
+  document.getElementById('photo-error').style.display = 'none';
+
+  try {
+    const data = await api('POST', '/photo', {
+      id: session.id, pin: session.pin, imageData: selectedPhotoData
+    });
+    session.photoSubmitted = true;
+    showConfirm(data.entries, false, null);
+    // Flash the bonus
+    const bonusEl = document.getElementById('confirm-bonus');
+    bonusEl.textContent = '+2 bonus entries added for your crew photo!';
+    bonusEl.style.display = 'block';
+  } catch (err) {
+    document.getElementById('photo-error').textContent = err.message || 'Upload failed. Please try again.';
+    document.getElementById('photo-error').style.display = 'block';
+    btn.innerHTML = 'Submit Photo &amp; Claim 2 Entries';
+    btn.disabled = false;
+  }
+}
+
+function skipPhoto() {
+  session.photoSubmitted = true; // don't re-offer this session
   showScreen('screen-confirm');
 }
 

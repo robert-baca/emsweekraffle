@@ -5,3 +5,5 @@ database.db-wal
 .env
 *.log
 .vercel/
+
+.vercel

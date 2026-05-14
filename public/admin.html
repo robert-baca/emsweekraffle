@@ -230,13 +230,14 @@ header span { color: var(--color-accent); font-size: 0.8rem; font-weight: 600; t
     <div class="stat-card"><div class="val" id="stat-participants">—</div><div class="lbl">Participants</div></div>
     <div class="stat-card"><div class="val" id="stat-entries">—</div><div class="lbl">Total Entries</div></div>
     <div class="stat-card"><div class="val" id="stat-surveys">—</div><div class="lbl">Surveys Completed</div></div>
-    <div class="stat-card"><div class="val" id="stat-skipped">—</div><div class="lbl">Surveys Skipped</div></div>
+    <div class="stat-card"><div class="val" id="stat-photos">—</div><div class="lbl">Crew Photos</div></div>
   </div>
 
   <div class="tabs">
     <button class="tab-btn active" onclick="switchTab('entries')">Entries</button>
     <button class="tab-btn" onclick="switchTab('survey')">Survey Editor</button>
     <button class="tab-btn" onclick="switchTab('draw')">Draw</button>
+    <button class="tab-btn" onclick="switchTab('photos')">Crew Photos</button>
   </div>
 
   <!-- ── Entries Tab ── -->
@@ -315,6 +316,17 @@ header span { color: var(--color-accent); font-size: 0.8rem; font-weight: 600; t
     <div class="panel">
       <h3>Draw History</h3>
       <div id="draw-history-list"><div class="empty-state">No draws yet.</div></div>
+    </div>
+  </div>
+
+  <!-- ── Crew Photos Tab ── -->
+  <div id="tab-photos" class="tab-panel">
+    <div class="panel">
+      <h3>Crew Photos</h3>
+      <p style="font-size:0.85rem;color:var(--color-text-muted);margin-bottom:1.25rem;">Photos submitted by crews for 2 bonus entries. Click any photo to view full size.</p>
+      <div id="photos-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:0.75rem;">
+        <div class="empty-state">Loading…</div>
+      </div>
     </div>
   </div>
 
@@ -459,9 +471,10 @@ document.getElementById('admin-pw').addEventListener('keydown', e => {
 
 // ── Tab switching ──────────────────────────────────────────────────────────
 function switchTab(name) {
-  document.querySelectorAll('.tab-btn').forEach((b, i) => b.classList.toggle('active', ['entries','survey','draw'][i] === name));
+  document.querySelectorAll('.tab-btn').forEach((b, i) => b.classList.toggle('active', ['entries','survey','draw','photos'][i] === name));
   document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
   document.getElementById('tab-' + name).classList.add('active');
+  if (name === 'photos') loadPhotos();
 }
 
 // ── Load all data ──────────────────────────────────────────────────────────
@@ -478,7 +491,7 @@ async function loadStats() {
     document.getElementById('stat-participants').textContent = s.total_participants;
     document.getElementById('stat-entries').textContent = s.total_entries;
     document.getElementById('stat-surveys').textContent = s.surveys_completed;
-    document.getElementById('stat-skipped').textContent = s.surveys_skipped;
+    document.getElementById('stat-photos').textContent = s.photos_submitted;
   } catch {}
 }
 
@@ -875,6 +888,33 @@ document.getElementById('edit-modal').addEventListener('click', e => {
 document.getElementById('question-modal').addEventListener('click', e => {
   if (e.target === document.getElementById('question-modal')) closeQModal();
 });
+
+// ── Crew Photos ────────────────────────────────────────────────────────────
+async function loadPhotos() {
+  const grid = document.getElementById('photos-grid');
+  grid.innerHTML = '<div class="empty-state">Loading…</div>';
+  try {
+    const photos = await api('GET', '/admin/photos');
+    if (!photos.length) {
+      grid.innerHTML = '<div class="empty-state">No crew photos yet.</div>';
+      return;
+    }
+    grid.innerHTML = photos.map(p => `
+      <div style="border-radius:var(--radius-sm);overflow:hidden;border:1px solid var(--color-border);background:var(--color-surface-alt);">
+        <a href="${p.image_data}" target="_blank">
+          <img src="${p.image_data}" alt="Crew photo" style="width:100%;height:140px;object-fit:cover;display:block;" />
+        </a>
+        <div style="padding:0.5rem 0.6rem;font-size:0.75rem;color:var(--color-text-muted);">
+          <strong style="color:var(--color-text)">${escHtml(p.first_name)} ${escHtml(p.last_name)}</strong><br>
+          ${escHtml(p.department)}<br>
+          ${fmtDate(p.submitted_at)}
+        </div>
+      </div>
+    `).join('');
+  } catch (err) {
+    grid.innerHTML = `<div class="empty-state">Failed to load photos: ${err.message}</div>`;
+  }
+}
 </script>
 </body>
 </html>
