@@ -68,9 +68,12 @@ async function initDb() {
     );
   `);
 
-  // Add photo_submitted column if it doesn't exist yet (migration)
+  // Migrations for existing deployments
   try {
     await db.execute("ALTER TABLE participants ADD COLUMN photo_submitted INTEGER NOT NULL DEFAULT 0");
+  } catch { /* column already exists */ }
+  try {
+    await db.execute("ALTER TABLE participants ADD COLUMN last_photo_at TEXT DEFAULT NULL");
   } catch { /* column already exists */ }
 
   const { rows } = await db.execute('SELECT COUNT(*) as cnt FROM survey_questions');
@@ -130,6 +133,13 @@ function getCooldownRemaining(lastEntryAt) {
   const last = new Date(lastEntryAt + 'Z');
   const now = new Date();
   return Math.max(0, COOLDOWN_MINUTES * 60 * 1000 - (now - last));
+}
+
+function getPhotoCooldownRemaining(lastPhotoAt) {
+  if (!lastPhotoAt) return 0;
+  const last = new Date(lastPhotoAt + 'Z');
+  const now = new Date();
+  return Math.max(0, 24 * 60 * 60 * 1000 - (now - last));
 }
 
 function row(rs) { return rs.rows[0]; }
@@ -226,6 +236,7 @@ app.post('/api/login', async (req, res) => {
     survey_completed: participant.survey_completed,
     survey_skipped: participant.survey_skipped,
     photo_submitted: participant.photo_submitted || 0,
+    photo_cooldown_remaining_ms: getPhotoCooldownRemaining(participant.last_photo_at),
     cooldown_remaining_ms: cooldownMs
   });
 });
@@ -306,12 +317,13 @@ app.post('/api/photo', async (req, res) => {
   const participant = row(await db.execute({ sql: 'SELECT * FROM participants WHERE id=?', args: [id] }));
   if (!participant || participant.pin_hash !== hashPin(pin))
     return res.status(401).json({ error: 'Invalid credentials' });
-  if (participant.photo_submitted)
-    return res.status(409).json({ error: 'Photo already submitted' });
+  const photoCooldownMs = getPhotoCooldownRemaining(participant.last_photo_at);
+  if (photoCooldownMs > 0)
+    return res.status(429).json({ error: 'Photo cooldown active', cooldown_remaining_ms: photoCooldownMs });
 
   await db.batch([
     { sql: 'INSERT INTO crew_photos (participant_id, image_data) VALUES (?, ?)', args: [id, imageData] },
-    { sql: "UPDATE participants SET photo_submitted=1, entries=entries+2, last_entry_at=datetime('now') WHERE id=?", args: [id] }
+    { sql: "UPDATE participants SET photo_submitted=1, entries=entries+2, last_photo_at=datetime('now') WHERE id=?", args: [id] }
   ], 'write');
 
   const updated = row(await db.execute({ sql: 'SELECT entries FROM participants WHERE id=?', args: [id] }));
