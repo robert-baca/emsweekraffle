@@ -597,12 +597,18 @@ footer {
         <div class="timer" id="countdown-display">15:00</div>
         <p>until your next entry is available</p>
       </div>
-      <!-- Photo CTA shown during cooldown if not yet submitted -->
+      <!-- Photo CTA: can submit now -->
       <div id="cooldown-photo-cta" style="display:none;margin-top:1.25rem;background:var(--color-surface-alt);border:1px solid var(--color-border);border-radius:var(--radius);padding:1rem 1.25rem;text-align:center;">
         <div style="font-size:1.4rem;margin-bottom:0.35rem">📸</div>
         <div style="font-weight:700;font-size:0.95rem;margin-bottom:0.3rem;">While you wait — earn 2 more entries!</div>
         <div style="font-size:0.82rem;color:var(--color-text-muted);margin-bottom:0.75rem;">Take a picture of you or your crew enjoying EMS Week to earn 2 extra entries. Once every 24 hours.</div>
         <button class="btn btn-primary btn-sm" onclick="showScreen('screen-photo')">Upload Crew Photo</button>
+      </div>
+      <!-- Photo CTA: next available time -->
+      <div id="cooldown-photo-next" style="display:none;margin-top:1.25rem;background:var(--color-surface-alt);border:1px solid var(--color-border);border-radius:var(--radius);padding:1rem 1.25rem;text-align:center;">
+        <div style="font-size:1.4rem;margin-bottom:0.35rem">📸</div>
+        <div style="font-weight:700;font-size:0.95rem;margin-bottom:0.3rem;">Crew photo = 2 bonus entries!</div>
+        <div style="font-size:0.82rem;color:var(--color-text-muted);">Come back at <strong id="cooldown-photo-next-time" style="color:var(--color-text);"></strong> to submit another crew photo for 2 more entries.</div>
       </div>
       <br>
       <button class="btn btn-ghost btn-full" onclick="goHome()">← Home</button>
@@ -954,8 +960,18 @@ async function skipSurvey() {
 // ── Cooldown ───────────────────────────────────────────────────────────────
 function startCooldown(remainingMs) {
   showScreen('screen-cooldown');
-  document.getElementById('cooldown-photo-cta').style.display =
-    session.photoCooldownMs > 0 ? 'none' : 'block';
+  if (session.photoCooldownMs > 0) {
+    document.getElementById('cooldown-photo-cta').style.display = 'none';
+    const nextTime = new Date(Date.now() + session.photoCooldownMs);
+    const isToday = nextTime.toDateString() === new Date().toDateString();
+    const timeStr = nextTime.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+    const dayStr = nextTime.toLocaleDateString([], { weekday: 'long' });
+    document.getElementById('cooldown-photo-next-time').textContent = isToday ? timeStr : `${timeStr} on ${dayStr}`;
+    document.getElementById('cooldown-photo-next').style.display = 'block';
+  } else {
+    document.getElementById('cooldown-photo-cta').style.display = 'block';
+    document.getElementById('cooldown-photo-next').style.display = 'none';
+  }
   if (countdownInterval) clearInterval(countdownInterval);
   let remaining = Math.ceil(remainingMs / 1000);
 
