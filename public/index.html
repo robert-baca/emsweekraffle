@@ -548,10 +548,21 @@ footer {
             <input type="password" inputmode="numeric" maxlength="1" class="pin-digit" />
           </div>
         </div>
-        <button type="submit" class="btn btn-primary" id="btn-login">Log In &amp; Enter</button>
+        <button type="submit" class="btn btn-primary" id="btn-login">Log In</button>
       </form>
       <br>
       <button class="btn btn-ghost btn-full" onclick="showScreen('screen-choose')">← Back</button>
+    </div>
+
+    <!-- ── Screen: Submit Entry ── -->
+    <div id="screen-entry" class="screen">
+      <div class="card-icon">🎟️</div>
+      <h2>Ready to Enter?</h2>
+      <p class="subtitle">Welcome back, <strong id="entry-name"></strong>! Tap below to record your raffle entry.</p>
+      <div id="entry-error" class="alert alert-error" style="display:none"></div>
+      <button class="btn btn-primary" id="btn-submit-entry" onclick="submitEntry()">Submit My Entry</button>
+      <br><br>
+      <button class="btn btn-ghost btn-full" onclick="goHome()">← Home</button>
     </div>
 
     <!-- ── Screen: Survey Offer ── -->
@@ -811,19 +822,19 @@ async function submitLogin(evt) {
       return;
     }
 
-    // Record entry
-    const entryData = await api('POST', '/entry', { id: session.id, pin });
-    showConfirm(entryData.entries, false, null);
+    // Show entry confirmation screen
+    document.getElementById('entry-name').textContent = loginData.first_name;
+    showScreen('screen-entry');
   } catch (err) {
     if (err.status === 429) {
       startCooldown(err.data.cooldown_remaining_ms);
     } else if (err.status === 401) {
       showError('login-error', 'Contact or PIN not found. Double-check and try again.');
-      btn.innerHTML = 'Log In &amp; Enter';
+      btn.innerHTML = 'Log In';
       btn.disabled = false;
     } else {
       showError('login-error', err.message || 'Login failed. Please try again.');
-      btn.innerHTML = 'Log In &amp; Enter';
+      btn.innerHTML = 'Log In';
       btn.disabled = false;
     }
   }
@@ -903,6 +914,26 @@ async function submitSurvey() {
   } catch {
     btn.innerHTML = 'Submit &amp; Claim 5 Bonus Entries';
     btn.disabled = false;
+  }
+}
+
+async function submitEntry() {
+  const btn = document.getElementById('btn-submit-entry');
+  btn.innerHTML = '<span class="spinner"></span> Submitting…';
+  btn.disabled = true;
+  document.getElementById('entry-error').style.display = 'none';
+  try {
+    const entryData = await api('POST', '/entry', { id: session.id, pin: session.pin });
+    showConfirm(entryData.entries, false, null);
+  } catch (err) {
+    if (err.status === 429) {
+      startCooldown(err.data.cooldown_remaining_ms);
+    } else {
+      document.getElementById('entry-error').textContent = err.message || 'Something went wrong. Try again.';
+      document.getElementById('entry-error').style.display = 'block';
+      btn.innerHTML = 'Submit My Entry';
+      btn.disabled = false;
+    }
   }
 }
 
