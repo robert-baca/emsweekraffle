@@ -881,7 +881,7 @@ function renderSurvey() {
       input = q.choices.map(c => `
         <div class="mc-option">
           <label>
-            <input type="radio" name="q${q.id}" value="${c.id}" />
+            <input type="radio" name="q${q.id}" value="${c.choice_text.replace(/"/g, '&quot;')}" />
             ${c.choice_text}
           </label>
         </div>

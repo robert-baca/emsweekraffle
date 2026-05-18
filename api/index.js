@@ -495,12 +495,18 @@ app.delete('/api/admin/survey/choices/:id', requireAdmin, async (req, res) => {
 });
 
 app.get('/api/admin/survey/responses', requireAdmin, async (req, res) => {
+  // LEFT JOIN resolves old rows where answer_text was stored as a choice ID integer
   const data = rows(await db.execute(`
     SELECT sa.participant_id, p.first_name, p.last_name, p.department, p.role,
-           sa.answered_at, sq.question_text, sq.question_type, sa.answer_text
+           sa.answered_at, sq.question_text, sq.question_type,
+           COALESCE(sc.choice_text, sa.answer_text) as answer_text
     FROM survey_answers sa
     JOIN participants p ON p.id = sa.participant_id
     JOIN survey_questions sq ON sq.id = sa.question_id
+    LEFT JOIN survey_choices sc
+      ON sq.question_type = 'multiple_choice'
+      AND CAST(sa.answer_text AS INTEGER) = sc.id
+      AND CAST(sa.answer_text AS INTEGER) > 0
     ORDER BY sa.participant_id, sq.sort_order
   `));
   res.json(data);
