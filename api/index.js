@@ -494,6 +494,18 @@ app.delete('/api/admin/survey/choices/:id', requireAdmin, async (req, res) => {
   res.json({ ok: true });
 });
 
+app.get('/api/admin/survey/responses', requireAdmin, async (req, res) => {
+  const data = rows(await db.execute(`
+    SELECT sa.participant_id, p.first_name, p.last_name, p.department, p.role,
+           sa.answered_at, sq.question_text, sq.question_type, sa.answer_text
+    FROM survey_answers sa
+    JOIN participants p ON p.id = sa.participant_id
+    JOIN survey_questions sq ON sq.id = sa.question_id
+    ORDER BY sa.participant_id, sq.sort_order
+  `));
+  res.json(data);
+});
+
 app.post('/api/admin/survey/reorder', requireAdmin, async (req, res) => {
   const { order } = req.body;
   await db.batch(
