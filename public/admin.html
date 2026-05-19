@@ -196,6 +196,11 @@ header span { color: var(--color-accent); font-size: 0.8rem; font-weight: 600; t
 .modal h3 { font-size: 1.1rem; margin-bottom: 1.25rem; }
 .modal-footer { display: flex; gap: 0.75rem; justify-content: flex-end; margin-top: 1.25rem; }
 
+/* ── Preview sidebar ── */
+.preview-btn { display:block; width:100%; text-align:left; padding:0.5rem 0.7rem; margin-bottom:0.15rem; background:none; border:none; border-radius:var(--radius-sm); color:var(--color-text-muted); font-family:var(--font-main); font-size:0.84rem; cursor:pointer; transition:background 0.15s, color 0.15s; }
+.preview-btn:hover { background:var(--color-surface-alt); color:var(--color-text); }
+.preview-btn.active { background:var(--color-surface-alt); color:var(--color-accent); font-weight:600; }
+
 /* ── Misc ── */
 .section-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem; }
 .section-header h3 { font-size: 0.95rem; font-weight: 700; }
@@ -243,6 +248,7 @@ header span { color: var(--color-accent); font-size: 0.8rem; font-weight: 600; t
     <button class="tab-btn" onclick="switchTab('responses')">Survey Responses</button>
     <button class="tab-btn" onclick="switchTab('draw')">Draw</button>
     <button class="tab-btn" onclick="switchTab('photos')">Crew Photos</button>
+    <button class="tab-btn" onclick="switchTab('preview')">👁 Preview</button>
   </div>
 
   <!-- ── Entries Tab ── -->
@@ -374,6 +380,35 @@ header span { color: var(--color-accent); font-size: 0.8rem; font-weight: 600; t
       <div id="photos-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:1rem;">
         <div class="empty-state">Loading…</div>
       </div>
+    </div>
+  </div>
+
+  <!-- ── Preview Tab ── -->
+  <div id="tab-preview" class="tab-panel">
+    <div style="display:grid;grid-template-columns:170px 1fr;gap:1rem;height:680px;">
+
+      <!-- Screen list sidebar -->
+      <div style="background:var(--color-surface);border:1px solid var(--color-border);border-radius:var(--radius);padding:0.6rem;overflow-y:auto;display:flex;flex-direction:column;">
+        <div style="font-size:0.7rem;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--color-text-muted);padding:0.25rem 0.5rem;margin-bottom:0.5rem;">User Screens</div>
+        <button class="preview-btn active" onclick="previewScreen('screen-choose',this)">🏠 Home</button>
+        <button class="preview-btn" onclick="previewScreen('screen-register',this)">📋 Register</button>
+        <button class="preview-btn" onclick="previewScreen('screen-login',this)">🔑 Log In</button>
+        <button class="preview-btn" onclick="previewScreen('screen-entry',this)">🎟️ Submit Entry</button>
+        <button class="preview-btn" onclick="previewScreen('screen-survey-offer',this)">🎁 Survey Offer</button>
+        <button class="preview-btn" onclick="previewScreen('screen-survey',this)">📝 Survey</button>
+        <button class="preview-btn" onclick="previewScreen('screen-cooldown',this)">⏳ Cooldown</button>
+        <button class="preview-btn" onclick="previewScreen('screen-photo',this)">📸 Photo Upload</button>
+        <button class="preview-btn" onclick="previewScreen('screen-confirm',this)">🎉 Confirmation</button>
+        <div style="margin-top:auto;padding-top:0.75rem;border-top:1px solid var(--color-border);font-size:0.72rem;color:var(--color-text-muted);line-height:1.5;padding:0.75rem 0.5rem 0;">
+          Live preview — sample data used for screens that need a logged-in user.
+        </div>
+      </div>
+
+      <!-- Iframe -->
+      <div style="background:var(--color-surface);border:1px solid var(--color-border);border-radius:var(--radius);overflow:hidden;">
+        <iframe id="preview-iframe" src="/" style="width:100%;height:100%;border:none;" onload="iframeReady()"></iframe>
+      </div>
+
     </div>
   </div>
 
@@ -518,12 +553,13 @@ document.getElementById('admin-pw').addEventListener('keydown', e => {
 
 // ── Tab switching ──────────────────────────────────────────────────────────
 function switchTab(name) {
-  document.querySelectorAll('.tab-btn').forEach((b, i) => b.classList.toggle('active', ['entries','survey','responses','draw','photos'][i] === name));
+  document.querySelectorAll('.tab-btn').forEach((b, i) => b.classList.toggle('active', ['entries','survey','responses','draw','photos','preview'][i] === name));
   document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
   document.getElementById('tab-' + name).classList.add('active');
   if (name === 'photos') loadPhotos();
   if (name === 'responses') { loadSurveyAnalytics(); loadSurveyResponses(); }
   if (name === 'draw') initDrawTab();
+  if (name === 'preview') initPreview();
 }
 
 // ── Load all data ──────────────────────────────────────────────────────────
@@ -1106,7 +1142,51 @@ async function loadDrawHistory() {
   } catch {}
 }
 
-// Close modals on backdrop click
+// ── Preview ────────────────────────────────────────────────────────────────
+let iframeLoaded = false;
+
+function iframeReady() {
+  iframeLoaded = true;
+  // If preview tab is already visible, show default screen
+  if (document.getElementById('tab-preview').classList.contains('active')) {
+    previewScreen('screen-choose', document.querySelector('.preview-btn'));
+  }
+}
+
+function initPreview() {
+  if (iframeLoaded) {
+    previewScreen('screen-choose', document.querySelector('.preview-btn'));
+  }
+  // If not loaded yet, iframeReady() will fire and handle it
+}
+
+function previewScreen(screenId, btn) {
+  document.querySelectorAll('.preview-btn').forEach(b => b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+  if (!iframeLoaded) return;
+
+  const win = document.getElementById('preview-iframe').contentWindow;
+  try {
+    // Screens that need session/dummy data injected first
+    if (screenId === 'screen-entry') {
+      win.document.getElementById('entry-name').textContent = 'Alex';
+      win.showScreen('screen-entry');
+    } else if (screenId === 'screen-cooldown') {
+      win.session = Object.assign({}, win.session, { photoCooldownMs: 0 });
+      win.startCooldown(12 * 60 * 1000 + 45 * 1000);
+    } else if (screenId === 'screen-confirm') {
+      win.session = Object.assign({}, win.session, { firstName: 'Alex', photoCooldownMs: 0 });
+      win.showConfirm(4, false, null);
+    } else if (screenId === 'screen-survey') {
+      win.session = Object.assign({}, win.session, { id: null, pin: null });
+      win.startSurvey();
+    } else {
+      win.showScreen(screenId);
+    }
+  } catch(e) { console.warn('Preview error:', e); }
+}
+
+// ── Close modals on backdrop click ────────────────────────────────────────
 document.getElementById('edit-modal').addEventListener('click', e => {
   if (e.target === document.getElementById('edit-modal')) closeEditModal();
 });
