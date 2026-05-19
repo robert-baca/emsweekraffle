@@ -312,6 +312,9 @@ header span { color: var(--color-accent); font-size: 0.8rem; font-weight: 600; t
         <h3>📊 Survey Analytics</h3>
         <button class="btn btn-secondary btn-sm" id="btn-toggle-charts" onclick="toggleCharts()">Hide Charts</button>
       </div>
+      <div style="display:inline-flex;align-items:center;gap:0.4rem;background:rgba(63,159,144,0.12);border:1px solid rgba(63,159,144,0.3);border-radius:20px;padding:0.25rem 0.75rem;font-size:0.75rem;font-weight:600;color:var(--color-teal);margin-bottom:1rem;">
+        🔒 De-identified — no personal information is shown
+      </div>
       <div id="analytics-content"><div class="empty-state">Loading…</div></div>
     </div>
 
@@ -320,6 +323,9 @@ header span { color: var(--color-accent); font-size: 0.8rem; font-weight: 600; t
       <div class="section-header">
         <h3>Individual Responses</h3>
         <span id="responses-count" style="font-size:0.82rem;color:var(--color-text-muted)"></span>
+      </div>
+      <div style="display:inline-flex;align-items:center;gap:0.4rem;background:rgba(63,159,144,0.12);border:1px solid rgba(63,159,144,0.3);border-radius:20px;padding:0.25rem 0.75rem;font-size:0.75rem;font-weight:600;color:var(--color-teal);margin-bottom:1rem;">
+        🔒 De-identified — names and contact info are not displayed
       </div>
       <div id="survey-responses-list"><div class="empty-state">Loading…</div></div>
     </div>
@@ -979,8 +985,8 @@ async function loadSurveyResponses() {
         <div style="display:flex;align-items:center;gap:0.75rem;padding:0.85rem 1rem;cursor:pointer;" onclick="toggleResponse(${pid})">
           <div style="width:1.6rem;height:1.6rem;border-radius:50%;background:var(--color-accent);color:#fff;font-weight:700;font-size:0.75rem;display:flex;align-items:center;justify-content:center;flex-shrink:0;">${idx + 1}</div>
           <div style="flex:1;">
-            <div style="font-weight:700;font-size:0.92rem;">${escHtml(p.first_name)} ${escHtml(p.last_name)}</div>
-            <div style="font-size:0.75rem;color:var(--color-text-muted);">${escHtml(p.department)} · ${escHtml(p.role)} · ${fmtDate(p.answered_at)}</div>
+            <div style="font-weight:700;font-size:0.92rem;">Respondent #${idx + 1}</div>
+            <div style="font-size:0.75rem;color:var(--color-text-muted);">${fmtDate(p.answered_at)}</div>
           </div>
           <div id="chevron-${pid}" style="color:var(--color-text-muted);font-size:0.8rem;transition:transform 0.2s;">▼</div>
         </div>

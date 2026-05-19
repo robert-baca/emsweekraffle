@@ -575,9 +575,13 @@ footer {
       <div class="card-icon">🎁</div>
       <h2>Earn 5 Bonus Entries!</h2>
       <p class="subtitle">Take a quick 5-question survey about your experience working with this hospital and we'll add <strong>5 bonus entries</strong> to your total — giving you <strong>6 entries</strong> for your first visit.</p>
-      <div style="background:var(--color-surface-alt);border:1px solid var(--color-border);border-radius:var(--radius);padding:1rem 1.25rem;margin-bottom:1.5rem;">
+      <div style="background:var(--color-surface-alt);border:1px solid var(--color-border);border-radius:var(--radius);padding:1rem 1.25rem;margin-bottom:0.85rem;">
         <div style="display:flex;align-items:center;gap:0.6rem;font-weight:700;color:var(--color-gold);margin-bottom:0.3rem;">⭐ Your Feedback Matters</div>
-        <div style="font-size:0.88rem;color:var(--color-text-muted);line-height:1.5;">Your answers are anonymous and help us improve EMS-to-hospital coordination. Takes about 2 minutes.</div>
+        <div style="font-size:0.88rem;color:var(--color-text-muted);line-height:1.5;">Your answers help us improve EMS-to-hospital coordination. Takes about 2 minutes.</div>
+      </div>
+      <div style="display:flex;align-items:flex-start;gap:0.5rem;background:rgba(63,159,144,0.1);border:1px solid rgba(63,159,144,0.3);border-radius:var(--radius-sm);padding:0.65rem 0.9rem;margin-bottom:1.5rem;font-size:0.83rem;color:var(--color-teal);line-height:1.5;">
+        <span style="flex-shrink:0;">🔒</span>
+        <span><strong>This survey is completely anonymous.</strong> Your name, contact info, and personal details are never linked to your answers.</span>
       </div>
       <button class="btn btn-primary" onclick="startSurvey()">Yes, I'll Take the Survey (+5 entries)</button>
       <br><br>
@@ -588,6 +592,9 @@ footer {
     <div id="screen-survey" class="screen">
       <div class="card-icon">📝</div>
       <h2>Quick Survey</h2>
+      <div style="display:flex;align-items:center;gap:0.45rem;font-size:0.78rem;color:var(--color-teal);margin-bottom:0.75rem;">
+        🔒 <span>Anonymous — your personal info is never tied to these answers</span>
+      </div>
       <div id="survey-progress" class="survey-progress"></div>
       <div id="survey-questions"></div>
       <button class="btn btn-primary" id="btn-submit-survey" onclick="submitSurvey()">Submit &amp; Claim 5 Bonus Entries</button>
