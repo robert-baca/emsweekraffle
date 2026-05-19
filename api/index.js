@@ -512,6 +512,54 @@ app.delete('/api/admin/survey/choices/:id', requireAdmin, async (req, res) => {
   res.json({ ok: true });
 });
 
+app.get('/api/admin/survey/analytics', requireAdmin, async (req, res) => {
+  const questions = rows(await db.execute('SELECT * FROM survey_questions WHERE active=1 ORDER BY sort_order'));
+  const allChoices = rows(await db.execute('SELECT * FROM survey_choices ORDER BY question_id, sort_order'));
+
+  // Resolve old ID-stored answers to choice text via LEFT JOIN
+  const counts = rows(await db.execute(`
+    SELECT sa.question_id, COALESCE(sc.choice_text, sa.answer_text) as answer_text, COUNT(*) as count
+    FROM survey_answers sa
+    JOIN survey_questions sq ON sq.id = sa.question_id
+    LEFT JOIN survey_choices sc
+      ON sq.question_type = 'multiple_choice'
+      AND CAST(sa.answer_text AS INTEGER) = sc.id
+      AND CAST(sa.answer_text AS INTEGER) > 0
+    GROUP BY sa.question_id, COALESCE(sc.choice_text, sa.answer_text)
+  `));
+
+  const result = questions.map(q => {
+    const qCounts = counts.filter(c => Number(c.question_id) === Number(q.id));
+    const total = qCounts.reduce((s, c) => s + Number(c.count), 0);
+    let distribution = [];
+
+    if (q.question_type === 'scale') {
+      distribution = [1,2,3,4,5].map(n => {
+        const c = qCounts.find(r => r.answer_text === String(n));
+        const count = c ? Number(c.count) : 0;
+        return { label: String(n), count, pct: total ? Math.round(count / total * 100) : 0 };
+      });
+    } else if (q.question_type === 'multiple_choice') {
+      const choices = allChoices.filter(c => Number(c.question_id) === Number(q.id));
+      distribution = choices.map(c => {
+        const match = qCounts.find(r => r.answer_text === c.choice_text);
+        const count = match ? Number(match.count) : 0;
+        return { label: c.choice_text, count, pct: total ? Math.round(count / total * 100) : 0 };
+      });
+    } else {
+      distribution = qCounts.filter(c => c.answer_text).map(c => ({ label: c.answer_text, count: Number(c.count) }));
+    }
+
+    const avg = q.question_type === 'scale' && total
+      ? (distribution.reduce((s, d) => s + parseInt(d.label) * d.count, 0) / total).toFixed(1)
+      : null;
+
+    return { id: Number(q.id), question_text: q.question_text, question_type: q.question_type, total, avg, distribution };
+  });
+
+  res.json(result);
+});
+
 app.get('/api/admin/survey/responses', requireAdmin, async (req, res) => {
   // LEFT JOIN resolves old rows where answer_text was stored as a choice ID integer
   const data = rows(await db.execute(`

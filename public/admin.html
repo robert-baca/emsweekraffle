@@ -305,13 +305,25 @@ header span { color: var(--color-accent); font-size: 0.8rem; font-weight: 600; t
 
   <!-- ── Survey Responses Tab ── -->
   <div id="tab-responses" class="tab-panel">
+
+    <!-- Analytics / charts -->
     <div class="panel">
       <div class="section-header">
-        <h3>Survey Responses</h3>
+        <h3>📊 Survey Analytics</h3>
+        <button class="btn btn-secondary btn-sm" id="btn-toggle-charts" onclick="toggleCharts()">Hide Charts</button>
+      </div>
+      <div id="analytics-content"><div class="empty-state">Loading…</div></div>
+    </div>
+
+    <!-- Individual responses -->
+    <div class="panel">
+      <div class="section-header">
+        <h3>Individual Responses</h3>
         <span id="responses-count" style="font-size:0.82rem;color:var(--color-text-muted)"></span>
       </div>
       <div id="survey-responses-list"><div class="empty-state">Loading…</div></div>
     </div>
+
   </div>
 
   <!-- ── Draw Tab ── -->
@@ -501,7 +513,7 @@ function switchTab(name) {
   document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
   document.getElementById('tab-' + name).classList.add('active');
   if (name === 'photos') loadPhotos();
-  if (name === 'responses') loadSurveyResponses();
+  if (name === 'responses') { loadSurveyAnalytics(); loadSurveyResponses(); }
   if (name === 'draw') initDrawTab();
 }
 
@@ -860,6 +872,74 @@ async function saveQuestion() {
     document.getElementById('qmodal-error').textContent = err.message;
     document.getElementById('qmodal-error').style.display = 'block';
   }
+}
+
+// ── Survey Analytics ───────────────────────────────────────────────────────
+let chartsVisible = true;
+
+function toggleCharts() {
+  chartsVisible = !chartsVisible;
+  document.getElementById('analytics-content').style.display = chartsVisible ? 'block' : 'none';
+  document.getElementById('btn-toggle-charts').textContent = chartsVisible ? 'Hide Charts' : 'Show Charts';
+}
+
+async function loadSurveyAnalytics() {
+  const container = document.getElementById('analytics-content');
+  container.innerHTML = '<div class="empty-state">Loading…</div>';
+  try {
+    const data = await api('GET', '/admin/survey/analytics');
+    const withData = data.filter(q => q.total > 0);
+    if (!withData.length) {
+      container.innerHTML = '<div class="empty-state">No survey data yet.</div>';
+      return;
+    }
+    container.innerHTML = withData.map(q => renderQuestionChart(q)).join('');
+  } catch {
+    container.innerHTML = '<div class="empty-state">Failed to load analytics.</div>';
+  }
+}
+
+function renderQuestionChart(q) {
+  const scaleColors = ['#e63946','#ff9527','#ffb71b','#3f9f90','#007eb4'];
+
+  if (q.question_type === 'open_text') {
+    const answers = q.distribution.filter(d => d.label && d.label.trim());
+    if (!answers.length) return '';
+    return `
+      <div style="margin-bottom:1.75rem;padding-bottom:1.5rem;border-bottom:1px solid var(--color-border);">
+        <div style="font-weight:700;font-size:0.9rem;margin-bottom:0.25rem;">${escHtml(q.question_text)}</div>
+        <div style="font-size:0.75rem;color:var(--color-text-muted);margin-bottom:0.75rem;">${q.total} response${q.total !== 1 ? 's' : ''} · Open Text</div>
+        ${answers.map(a => `<div style="background:var(--color-surface);border:1px solid var(--color-border);border-radius:var(--radius-sm);padding:0.4rem 0.75rem;margin-bottom:0.35rem;font-size:0.88rem;">${escHtml(a.label)}</div>`).join('')}
+      </div>`;
+  }
+
+  const max = Math.max(...q.distribution.map(d => d.count), 1);
+  const isScale = q.question_type === 'scale';
+
+  const bars = q.distribution.map((d, i) => {
+    const barPct = Math.round(d.count / max * 100);
+    const color = isScale ? scaleColors[i] : 'var(--color-accent)';
+    const labelW = isScale ? '3rem' : '11rem';
+    return `
+      <div style="display:flex;align-items:center;gap:0.6rem;margin-bottom:0.4rem;font-size:0.83rem;">
+        <div style="width:${labelW};text-align:right;flex-shrink:0;color:var(--color-text-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="${escHtml(d.label)}">${escHtml(d.label)}</div>
+        <div style="flex:1;background:var(--color-surface);border-radius:3px;height:20px;overflow:hidden;border:1px solid var(--color-border);">
+          <div style="width:${barPct}%;background:${color};height:100%;border-radius:3px;min-width:${d.count > 0 ? '3px' : '0'};"></div>
+        </div>
+        <div style="width:5rem;flex-shrink:0;font-size:0.78rem;color:var(--color-text-muted);">${d.count} <span style="opacity:0.7">(${d.pct}%)</span></div>
+      </div>`;
+  }).join('');
+
+  const meta = isScale && q.avg
+    ? `${q.total} response${q.total !== 1 ? 's' : ''} · avg score <strong style="color:var(--color-gold)">${q.avg} / 5</strong>`
+    : `${q.total} response${q.total !== 1 ? 's' : ''}`;
+
+  return `
+    <div style="margin-bottom:1.75rem;padding-bottom:1.5rem;border-bottom:1px solid var(--color-border);">
+      <div style="font-weight:700;font-size:0.9rem;margin-bottom:0.25rem;">${escHtml(q.question_text)}</div>
+      <div style="font-size:0.75rem;color:var(--color-text-muted);margin-bottom:0.85rem;">${meta}</div>
+      ${bars}
+    </div>`;
 }
 
 // ── Survey Responses ───────────────────────────────────────────────────────
