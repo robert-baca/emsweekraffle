@@ -602,28 +602,31 @@ app.post('/api/admin/survey/reorder', requireAdmin, async (req, res) => {
 // ── Admin Draw ────────────────────────────────────────────────────────────────
 
 app.get('/api/admin/draw/day', requireAdmin, async (req, res) => {
-  const { date } = req.query;
+  const { date, tz } = req.query;
   if (!date) return res.status(400).json({ error: 'Date required' });
+  // tz = browser's getTimezoneOffset() in minutes (positive = behind UTC, e.g. 300 for CDT)
+  const tzMod = String(-(parseInt(tz) || 0)) + ' minutes';
   const stats = row(await db.execute({
     sql: `SELECT COUNT(DISTINCT participant_id) as participants, COALESCE(SUM(count), 0) as total_entries
-          FROM entries_log WHERE date(created_at) = ?`,
-    args: [date]
+          FROM entries_log WHERE date(datetime(created_at, ?)) = ?`,
+    args: [tzMod, date]
   }));
   res.json({ participants: Number(stats.participants), total_entries: Number(stats.total_entries) });
 });
 
 app.post('/api/admin/draw', requireAdmin, async (req, res) => {
-  const { date } = req.body;
+  const { date, tz } = req.body;
   if (!date) return res.status(400).json({ error: 'Draw date required' });
+  const tzMod = String(-(parseInt(tz) || 0)) + ' minutes';
 
   const participants = rows(await db.execute({
     sql: `SELECT el.participant_id as id, SUM(el.count) as entries,
           p.first_name, p.last_name, p.department, p.role, p.contact
           FROM entries_log el
           JOIN participants p ON p.id = el.participant_id
-          WHERE date(el.created_at) = ?
+          WHERE date(datetime(el.created_at, ?)) = ?
           GROUP BY el.participant_id`,
-    args: [date]
+    args: [tzMod, date]
   }));
   if (!participants.length) return res.status(400).json({ error: `No entries recorded for ${date}` });
 
@@ -634,6 +637,11 @@ app.post('/api/admin/draw', requireAdmin, async (req, res) => {
 
   await db.execute({ sql: 'INSERT INTO draw_history (participant_id, draw_date) VALUES (?, ?)', args: [winner.id, date] });
   res.json({ id: Number(winner.id), first_name: winner.first_name, last_name: winner.last_name, department: winner.department, role: winner.role, contact: winner.contact, entries: Number(winner.entries), draw_date: date });
+});
+
+app.delete('/api/admin/draw/history', requireAdmin, async (req, res) => {
+  await db.execute('DELETE FROM draw_history');
+  res.json({ ok: true });
 });
 
 app.get('/api/admin/draw/history', requireAdmin, async (req, res) => {

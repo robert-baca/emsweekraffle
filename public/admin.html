@@ -355,7 +355,10 @@ header span { color: var(--color-accent); font-size: 0.8rem; font-weight: 600; t
       </div>
     </div>
     <div class="panel">
-      <h3>Draw History</h3>
+      <div class="section-header">
+        <h3>Draw History</h3>
+        <button class="btn btn-danger btn-sm" onclick="clearDrawHistory()">Clear History</button>
+      </div>
       <div id="draw-history-list"><div class="empty-state">No draws yet.</div></div>
     </div>
   </div>
@@ -1034,7 +1037,8 @@ async function loadDayStats() {
   if (!date) { wrap.textContent = 'Select a day above to see entry counts.'; return; }
   wrap.textContent = 'Loading…';
   try {
-    const stats = await api('GET', `/admin/draw/day?date=${date}`);
+    const tz = new Date().getTimezoneOffset();
+    const stats = await api('GET', `/admin/draw/day?date=${date}&tz=${tz}`);
     if (!stats.total_entries) {
       wrap.innerHTML = `<span style="color:var(--color-warning)">No entries recorded for ${date}.</span>`;
     } else {
@@ -1050,7 +1054,8 @@ async function doDraw() {
   btn.innerHTML = '<span class="spinner"></span> Drawing…';
   btn.disabled = true;
   try {
-    const w = await api('POST', '/admin/draw', { date });
+    const tz = new Date().getTimezoneOffset();
+    const w = await api('POST', '/admin/draw', { date, tz });
     document.getElementById('winner-card').innerHTML = `
       <div style="font-size:1.5rem;margin-bottom:0.5rem">🏆</div>
       <div class="winner-name">${escHtml(w.first_name)} ${escHtml(w.last_name)}</div>
@@ -1067,6 +1072,16 @@ async function doDraw() {
   } finally {
     btn.innerHTML = '🎰 Draw Winner';
     btn.disabled = false;
+  }
+}
+
+async function clearDrawHistory() {
+  if (!confirm('Clear all draw history? This cannot be undone.')) return;
+  try {
+    await api('DELETE', '/admin/draw/history');
+    loadDrawHistory();
+  } catch (err) {
+    alert('Failed to clear history: ' + err.message);
   }
 }
 
