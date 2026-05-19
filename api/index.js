@@ -66,6 +66,13 @@ async function initDb() {
       image_data TEXT NOT NULL,
       submitted_at TEXT NOT NULL DEFAULT (datetime('now'))
     );
+    CREATE TABLE IF NOT EXISTS entries_log (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      participant_id INTEGER NOT NULL REFERENCES participants(id) ON DELETE CASCADE,
+      entry_type TEXT NOT NULL DEFAULT 'visit',
+      count INTEGER NOT NULL DEFAULT 1,
+      created_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
   `);
 
   // Migrations for existing deployments
@@ -74,6 +81,9 @@ async function initDb() {
   } catch { /* column already exists */ }
   try {
     await db.execute("ALTER TABLE participants ADD COLUMN last_photo_at TEXT DEFAULT NULL");
+  } catch { /* column already exists */ }
+  try {
+    await db.execute("ALTER TABLE draw_history ADD COLUMN draw_date TEXT DEFAULT NULL");
   } catch { /* column already exists */ }
 
   const { rows } = await db.execute('SELECT COUNT(*) as cnt FROM survey_questions');
@@ -212,7 +222,10 @@ app.post('/api/register', async (req, res) => {
     args: [first_name.trim(), last_name.trim(), norm, department.trim(), role, hashPin(pin)]
   });
 
-  res.json({ id: lastId(result), entries: 1, new: true });
+  const newId = lastId(result);
+  await db.execute({ sql: "INSERT INTO entries_log (participant_id,entry_type,count) VALUES (?,'visit',1)", args: [newId] });
+
+  res.json({ id: newId, entries: 1, new: true });
 });
 
 app.post('/api/login', async (req, res) => {
@@ -253,10 +266,10 @@ app.post('/api/entry', async (req, res) => {
   if (cooldownMs > 0)
     return res.status(429).json({ error: 'Cooldown active', cooldown_remaining_ms: cooldownMs });
 
-  await db.execute({
-    sql: "UPDATE participants SET entries=entries+1, last_entry_at=datetime('now') WHERE id=?",
-    args: [id]
-  });
+  await db.batch([
+    { sql: "UPDATE participants SET entries=entries+1, last_entry_at=datetime('now') WHERE id=?", args: [id] },
+    { sql: "INSERT INTO entries_log (participant_id,entry_type,count) VALUES (?,'visit',1)", args: [id] }
+  ], 'write');
   const updated = row(await db.execute({ sql: 'SELECT entries FROM participants WHERE id=?', args: [id] }));
   res.json({ entries: updated.entries, cooldown_remaining_ms: COOLDOWN_MINUTES * 60 * 1000 });
 });
@@ -282,6 +295,10 @@ app.post('/api/survey', async (req, res) => {
   }
   statements.push({
     sql: "UPDATE participants SET survey_completed=1, entries=entries+5, last_entry_at=datetime('now') WHERE id=?",
+    args: [id]
+  });
+  statements.push({
+    sql: "INSERT INTO entries_log (participant_id,entry_type,count) VALUES (?,'survey',5)",
     args: [id]
   });
   await db.batch(statements, 'write');
@@ -323,7 +340,8 @@ app.post('/api/photo', async (req, res) => {
 
   await db.batch([
     { sql: 'INSERT INTO crew_photos (participant_id, image_data) VALUES (?, ?)', args: [id, imageData] },
-    { sql: "UPDATE participants SET photo_submitted=1, entries=entries+2, last_photo_at=datetime('now') WHERE id=?", args: [id] }
+    { sql: "UPDATE participants SET photo_submitted=1, entries=entries+2, last_photo_at=datetime('now') WHERE id=?", args: [id] },
+    { sql: "INSERT INTO entries_log (participant_id,entry_type,count) VALUES (?,'photo',2)", args: [id] }
   ], 'write');
 
   const updated = row(await db.execute({ sql: 'SELECT entries FROM participants WHERE id=?', args: [id] }));
@@ -523,17 +541,39 @@ app.post('/api/admin/survey/reorder', requireAdmin, async (req, res) => {
 
 // ── Admin Draw ────────────────────────────────────────────────────────────────
 
+app.get('/api/admin/draw/day', requireAdmin, async (req, res) => {
+  const { date } = req.query;
+  if (!date) return res.status(400).json({ error: 'Date required' });
+  const stats = row(await db.execute({
+    sql: `SELECT COUNT(DISTINCT participant_id) as participants, COALESCE(SUM(count), 0) as total_entries
+          FROM entries_log WHERE date(created_at) = ?`,
+    args: [date]
+  }));
+  res.json({ participants: Number(stats.participants), total_entries: Number(stats.total_entries) });
+});
+
 app.post('/api/admin/draw', requireAdmin, async (req, res) => {
-  const participants = rows(await db.execute('SELECT id,first_name,last_name,department,role,contact,entries FROM participants WHERE entries > 0'));
-  if (!participants.length) return res.status(400).json({ error: 'No participants' });
+  const { date } = req.body;
+  if (!date) return res.status(400).json({ error: 'Draw date required' });
+
+  const participants = rows(await db.execute({
+    sql: `SELECT el.participant_id as id, SUM(el.count) as entries,
+          p.first_name, p.last_name, p.department, p.role, p.contact
+          FROM entries_log el
+          JOIN participants p ON p.id = el.participant_id
+          WHERE date(el.created_at) = ?
+          GROUP BY el.participant_id`,
+    args: [date]
+  }));
+  if (!participants.length) return res.status(400).json({ error: `No entries recorded for ${date}` });
 
   const pool = [];
-  participants.forEach(p => { for (let i = 0; i < p.entries; i++) pool.push(Number(p.id)); });
+  participants.forEach(p => { for (let i = 0; i < Number(p.entries); i++) pool.push(Number(p.id)); });
   const winnerId = pool[Math.floor(Math.random() * pool.length)];
   const winner = participants.find(p => Number(p.id) === winnerId);
 
-  await db.execute({ sql: 'INSERT INTO draw_history (participant_id) VALUES (?)', args: [winner.id] });
-  res.json({ id: Number(winner.id), first_name: winner.first_name, last_name: winner.last_name, department: winner.department, role: winner.role, contact: winner.contact, entries: winner.entries });
+  await db.execute({ sql: 'INSERT INTO draw_history (participant_id, draw_date) VALUES (?, ?)', args: [winner.id, date] });
+  res.json({ id: Number(winner.id), first_name: winner.first_name, last_name: winner.last_name, department: winner.department, role: winner.role, contact: winner.contact, entries: Number(winner.entries), draw_date: date });
 });
 
 app.get('/api/admin/draw/history', requireAdmin, async (req, res) => {

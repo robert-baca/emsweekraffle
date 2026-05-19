@@ -319,8 +319,15 @@ header span { color: var(--color-accent); font-size: 0.8rem; font-weight: 600; t
     <div class="panel">
       <h3>Weighted Drawing</h3>
       <p style="font-size:0.88rem;color:var(--color-text-muted);margin-bottom:1.25rem;">
-        Each participant's entries are weighted — more entries = higher chance of being drawn. Click the button to pick a winner at random.
+        Select a day — only entries recorded on that day will be in the pool. More entries on that day = higher chance of winning.
       </p>
+      <div class="field" style="max-width:260px;margin-bottom:0.85rem;">
+        <label>Draw Day</label>
+        <input type="date" id="draw-date" onchange="loadDayStats()" style="background:var(--color-surface-alt);border:1px solid var(--color-border);border-radius:var(--radius-sm);color:var(--color-text);font-family:var(--font-main);font-size:0.92rem;padding:0.55rem 0.8rem;outline:none;width:100%;" />
+      </div>
+      <div id="day-stats-wrap" style="background:var(--color-surface-alt);border:1px solid var(--color-border);border-radius:var(--radius-sm);padding:0.7rem 1rem;margin-bottom:1.25rem;font-size:0.88rem;color:var(--color-text-muted);">
+        Select a day above to see entry counts.
+      </div>
       <button class="btn btn-primary" id="btn-draw" onclick="doDraw()">🎰 Draw Winner</button>
       <div id="draw-result" style="display:none">
         <div class="winner-card" id="winner-card"></div>
@@ -495,6 +502,7 @@ function switchTab(name) {
   document.getElementById('tab-' + name).classList.add('active');
   if (name === 'photos') loadPhotos();
   if (name === 'responses') loadSurveyResponses();
+  if (name === 'draw') initDrawTab();
 }
 
 // ── Load all data ──────────────────────────────────────────────────────────
@@ -921,18 +929,48 @@ function toggleResponse(pid) {
 }
 
 // ── Draw ───────────────────────────────────────────────────────────────────
+function initDrawTab() {
+  const input = document.getElementById('draw-date');
+  if (!input.value) {
+    // Default to today in local time (YYYY-MM-DD)
+    const now = new Date();
+    const y = now.getFullYear();
+    const m = String(now.getMonth() + 1).padStart(2, '0');
+    const d = String(now.getDate()).padStart(2, '0');
+    input.value = `${y}-${m}-${d}`;
+    loadDayStats();
+  }
+}
+
+async function loadDayStats() {
+  const date = document.getElementById('draw-date').value;
+  const wrap = document.getElementById('day-stats-wrap');
+  if (!date) { wrap.textContent = 'Select a day above to see entry counts.'; return; }
+  wrap.textContent = 'Loading…';
+  try {
+    const stats = await api('GET', `/admin/draw/day?date=${date}`);
+    if (!stats.total_entries) {
+      wrap.innerHTML = `<span style="color:var(--color-warning)">No entries recorded for ${date}.</span>`;
+    } else {
+      wrap.innerHTML = `<strong style="color:var(--color-accent)">${stats.total_entries}</strong> entr${stats.total_entries === 1 ? 'y' : 'ies'} from <strong style="color:var(--color-accent)">${stats.participants}</strong> participant${stats.participants !== 1 ? 's' : ''} on <strong style="color:var(--color-text)">${date}</strong>`;
+    }
+  } catch { wrap.innerHTML = '<span style="color:#ff8080">Failed to load stats.</span>'; }
+}
+
 async function doDraw() {
+  const date = document.getElementById('draw-date').value;
+  if (!date) { alert('Please select a draw day first.'); return; }
   const btn = document.getElementById('btn-draw');
   btn.innerHTML = '<span class="spinner"></span> Drawing…';
   btn.disabled = true;
   try {
-    const w = await api('POST', '/admin/draw');
+    const w = await api('POST', '/admin/draw', { date });
     document.getElementById('winner-card').innerHTML = `
       <div style="font-size:1.5rem;margin-bottom:0.5rem">🏆</div>
       <div class="winner-name">${escHtml(w.first_name)} ${escHtml(w.last_name)}</div>
       <div class="winner-meta">
         ${escHtml(w.department)} · ${escHtml(w.role)}<br>
-        ${w.entries} ${w.entries === 1 ? 'entry' : 'entries'}
+        ${w.entries} ${w.entries === 1 ? 'entry' : 'entries'} on ${escHtml(w.draw_date)}
       </div>
       <div class="winner-contact">${escHtml(w.contact)}</div>
     `;
