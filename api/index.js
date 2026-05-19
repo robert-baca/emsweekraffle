@@ -86,6 +86,18 @@ async function initDb() {
     await db.execute("ALTER TABLE draw_history ADD COLUMN draw_date TEXT DEFAULT NULL");
   } catch { /* column already exists */ }
 
+  // Back-fill entries_log for participants registered before this table existed.
+  // Uses last_entry_at as the date so they appear in the correct day's draw.
+  try {
+    await db.execute(`
+      INSERT INTO entries_log (participant_id, entry_type, count, created_at)
+      SELECT id, 'backfill', entries, last_entry_at
+      FROM participants
+      WHERE entries > 0
+      AND id NOT IN (SELECT DISTINCT participant_id FROM entries_log)
+    `);
+  } catch { /* ignore */ }
+
   const { rows } = await db.execute('SELECT COUNT(*) as cnt FROM survey_questions');
   if (rows[0].cnt) return;
 
