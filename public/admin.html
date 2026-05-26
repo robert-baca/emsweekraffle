@@ -328,7 +328,10 @@ header span { color: var(--color-accent); font-size: 0.8rem; font-weight: 600; t
     <div class="panel">
       <div class="section-header">
         <h3>Individual Responses</h3>
-        <span id="responses-count" style="font-size:0.82rem;color:var(--color-text-muted)"></span>
+        <div style="display:flex;align-items:center;gap:0.75rem;">
+          <span id="responses-count" style="font-size:0.82rem;color:var(--color-text-muted)"></span>
+          <button class="btn btn-secondary btn-sm" onclick="exportSurveyCSV()">Export CSV</button>
+        </div>
       </div>
       <div style="display:inline-flex;align-items:center;gap:0.4rem;background:rgba(63,159,144,0.12);border:1px solid rgba(63,159,144,0.3);border-radius:20px;padding:0.25rem 0.75rem;font-size:0.75rem;font-weight:600;color:var(--color-teal);margin-bottom:1rem;">
         🔒 De-identified — names and contact info are not displayed
@@ -1043,6 +1046,18 @@ async function loadSurveyResponses() {
   } catch (err) {
     list.innerHTML = `<div class="empty-state">Failed to load responses: ${escHtml(err.message)}</div>`;
   }
+}
+
+async function exportSurveyCSV() {
+  const res = await fetch('/api/admin/survey/export', { headers: { 'x-admin-password': adminPassword } });
+  if (!res.ok) { alert('Export failed'); return; }
+  const blob = await res.blob();
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'ems-survey-responses.csv';
+  a.click();
+  URL.revokeObjectURL(url);
 }
 
 function toggleResponse(pid) {

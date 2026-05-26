@@ -572,6 +572,50 @@ app.get('/api/admin/survey/analytics', requireAdmin, async (req, res) => {
   res.json(result);
 });
 
+app.get('/api/admin/survey/export', requireAdmin, async (req, res) => {
+  const questions = rows(await db.execute('SELECT * FROM survey_questions ORDER BY sort_order'));
+  const data = rows(await db.execute(`
+    SELECT sa.participant_id, p.first_name, p.last_name, p.department, p.role,
+           sa.answered_at, sa.question_id,
+           COALESCE(sc.choice_text, sa.answer_text) as answer_text
+    FROM survey_answers sa
+    JOIN participants p ON p.id = sa.participant_id
+    JOIN survey_questions sq ON sq.id = sa.question_id
+    LEFT JOIN survey_choices sc
+      ON sq.question_type = 'multiple_choice'
+      AND CAST(sa.answer_text AS INTEGER) = sc.id
+      AND CAST(sa.answer_text AS INTEGER) > 0
+    ORDER BY sa.participant_id, sq.sort_order
+  `));
+
+  const cell = v => `"${String(v == null ? '' : v).replace(/"/g, '""')}"`;
+  const headers = ['First Name', 'Last Name', 'Department', 'Role', 'Submitted At',
+    ...questions.map(q => q.question_text)];
+  const csvLines = [headers.map(cell).join(',')];
+
+  const byParticipant = new Map();
+  data.forEach(r => {
+    if (!byParticipant.has(r.participant_id)) {
+      byParticipant.set(r.participant_id, {
+        first_name: r.first_name, last_name: r.last_name,
+        department: r.department, role: r.role,
+        answered_at: r.answered_at, answers: {}
+      });
+    }
+    byParticipant.get(r.participant_id).answers[r.question_id] = r.answer_text || '';
+  });
+
+  byParticipant.forEach(p => {
+    const rowVals = [p.first_name, p.last_name, p.department, p.role, p.answered_at,
+      ...questions.map(q => p.answers[q.id] || '')];
+    csvLines.push(rowVals.map(cell).join(','));
+  });
+
+  res.setHeader('Content-Type', 'text/csv');
+  res.setHeader('Content-Disposition', 'attachment; filename="ems-survey-responses.csv"');
+  res.send(csvLines.join('\n'));
+});
+
 app.get('/api/admin/survey/responses', requireAdmin, async (req, res) => {
   // LEFT JOIN resolves old rows where answer_text was stored as a choice ID integer
   const data = rows(await db.execute(`
