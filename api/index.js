@@ -7,6 +7,12 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || '4262';
 const COOLDOWN_MINUTES = 15;
+const RAFFLE_OPEN = process.env.RAFFLE_OPEN !== 'false';
+
+function requireOpen(req, res, next) {
+  if (!RAFFLE_OPEN) return res.status(403).json({ error: 'This raffle is closed for the year.' });
+  next();
+}
 
 // ── Database client ──────────────────────────────────────────────────────────
 // Set TURSO_DATABASE_URL + TURSO_AUTH_TOKEN in Vercel environment variables.
@@ -187,6 +193,8 @@ function requireAdmin(req, res, next) {
 
 // ── Public API ────────────────────────────────────────────────────────────────
 
+app.get('/api/status', (req, res) => res.json({ open: RAFFLE_OPEN }));
+
 app.post('/api/check', async (req, res) => {
   const { first_name, last_name, contact } = req.body;
   if (!first_name || !last_name) return res.status(400).json({ error: 'Name required' });
@@ -209,7 +217,7 @@ app.post('/api/check', async (req, res) => {
   res.json({ exists: false });
 });
 
-app.post('/api/register', async (req, res) => {
+app.post('/api/register', requireOpen, async (req, res) => {
   const { first_name, last_name, contact, department, role, pin } = req.body;
   if (!first_name || !last_name || !contact || !department || !role || !pin)
     return res.status(400).json({ error: 'All fields required' });
@@ -266,7 +274,7 @@ app.post('/api/login', async (req, res) => {
   });
 });
 
-app.post('/api/entry', async (req, res) => {
+app.post('/api/entry', requireOpen, async (req, res) => {
   const { id, pin } = req.body;
   if (!id || !pin) return res.status(400).json({ error: 'ID and PIN required' });
 
@@ -286,7 +294,7 @@ app.post('/api/entry', async (req, res) => {
   res.json({ entries: updated.entries, cooldown_remaining_ms: COOLDOWN_MINUTES * 60 * 1000 });
 });
 
-app.post('/api/survey', async (req, res) => {
+app.post('/api/survey', requireOpen, async (req, res) => {
   const { id, pin, answers } = req.body;
   if (!id || !pin) return res.status(400).json({ error: 'ID and PIN required' });
 
@@ -319,7 +327,7 @@ app.post('/api/survey', async (req, res) => {
   res.json({ entries: updated.entries, bonus: 5 });
 });
 
-app.post('/api/survey/skip', async (req, res) => {
+app.post('/api/survey/skip', requireOpen, async (req, res) => {
   const { id, pin } = req.body;
   const participant = row(await db.execute({ sql: 'SELECT * FROM participants WHERE id=?', args: [id] }));
   if (!participant || participant.pin_hash !== hashPin(pin))
@@ -339,7 +347,7 @@ app.get('/api/survey/questions', async (req, res) => {
 
 // ── Crew photo ───────────────────────────────────────────────────────────────
 
-app.post('/api/photo', async (req, res) => {
+app.post('/api/photo', requireOpen, async (req, res) => {
   const { id, pin, imageData } = req.body;
   if (!id || !pin || !imageData) return res.status(400).json({ error: 'Missing fields' });
 

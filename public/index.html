@@ -458,6 +458,13 @@ footer {
       <h2>Loading…</h2>
     </div>
 
+    <!-- ── Screen: Closed for the year ── -->
+    <div id="screen-closed" class="screen">
+      <div class="card-icon">🏁</div>
+      <h2>This Year's Raffle Has Ended</h2>
+      <p class="subtitle">Thanks to everyone who entered! Winners have been drawn. Check back next EMS Week for another round.</p>
+    </div>
+
     <!-- ── Screen: Choose (new / returning) ── -->
     <div id="screen-choose" class="screen">
       <div class="card-icon">🚑</div>
@@ -1100,7 +1107,9 @@ function goHome() {
 }
 
 // ── Init ───────────────────────────────────────────────────────────────────
-showScreen('screen-choose');
+fetch('/api/status').then(r => r.json()).then(({ open }) => {
+  showScreen(open ? 'screen-choose' : 'screen-closed');
+}).catch(() => showScreen('screen-choose'));
 
 // ── Admin PIN overlay ──────────────────────────────────────────────────────
 function openAdminOverlay() {
