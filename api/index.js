@@ -1,6 +1,7 @@
 const express = require('express');
 const { createClient } = require('@libsql/client');
 const path = require('path');
+const os = require('os');
 const crypto = require('crypto');
 
 const app = express();
@@ -15,11 +16,15 @@ function requireOpen(req, res, next) {
 }
 
 // ── Database client ──────────────────────────────────────────────────────────
-// Set TURSO_DATABASE_URL + TURSO_AUTH_TOKEN in Vercel environment variables.
-// For local dev use the same Turso credentials or set TURSO_DATABASE_URL=file:database.db
+// Set TURSO_DATABASE_URL + TURSO_AUTH_TOKEN in Vercel environment variables for
+// real persistence. Without them, this falls back to a local SQLite file in the
+// OS temp dir (the only writable path on Vercel) — fine while the raffle is
+// closed, but NOT durable: it resets on every cold start. Set real Turso
+// credentials before reopening registration for next year.
+const FALLBACK_DB_PATH = path.join(os.tmpdir(), 'database.db');
 
 const db = createClient({
-  url: process.env.TURSO_DATABASE_URL || 'file:database.db',
+  url: process.env.TURSO_DATABASE_URL || `file:${FALLBACK_DB_PATH}`,
   authToken: process.env.TURSO_AUTH_TOKEN || undefined,
 });
 
